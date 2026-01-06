@@ -3,9 +3,90 @@ import { Image } from "astro:assets";
 import BaseLayout from "~/layouts/BaseLayout.astro";
 import "@fancyapps/ui/dist/fancybox/fancybox.css";
 
-const images = import.meta.glob<{ default: ImageMetadata }>(
-  "../images/*.{jpg,jpeg,png,webp}",
+/**
+ * 1) Fotos (incluye posters de videos)
+ * Incluyo extensiones en MAYÚSCULA porque tienes IMG_1519.JPG.
+ */
+const photos = import.meta.glob<{ default: ImageMetadata }>(
+  "../images/*.{jpg,jpeg,png,webp,JPG,JPEG,PNG,WEBP}",
 );
+
+/**
+ * 2) Videos como URL (NO pasan por <Image />)
+ */
+const videos = import.meta.glob<string>(
+  "../images/*.{mp4,webm,MP4,WEBM}",
+  { query: "?url", import: "default", eager: true },
+);
+
+const fileName = (p: string) => p.split("/").pop() ?? p;
+const stripExt = (n: string) => n.replace(/\.[^.]+$/, "");
+const getExt = (n: string) => (n.match(/\.([^.]+)$/)?.[1] ?? "").toLowerCase();
+
+function videoMime(filename: string) {
+  const ext = getExt(filename);
+  if (ext === "webm") return "video/webm";
+  return "video/mp4";
+}
+
+// Orden determinista (por nombre)
+const sortedPhotoEntries = Object.entries(photos).sort(([a], [b]) => a.localeCompare(b));
+const sortedVideoEntries = Object.entries(videos).sort(([a], [b]) => a.localeCompare(b));
+
+// Basenames de videos (para excluir posters del listado de fotos)
+const videoBaseNames = new Set(
+  sortedVideoEntries.map(([p]) => stripExt(fileName(p)).toLowerCase()),
+);
+
+/**
+ * Para un video "../images/002.mp4", busca "../images/002.jpg|jpeg|png|webp"
+ */
+function findPosterPath(videoPath: string) {
+  const basePath = videoPath.replace(/\.[^.]+$/, "");
+  const candidates = [
+    `${basePath}.jpg`,
+    `${basePath}.jpeg`,
+    `${basePath}.png`,
+    `${basePath}.webp`,
+    `${basePath}.JPG`,
+    `${basePath}.JPEG`,
+    `${basePath}.PNG`,
+    `${basePath}.WEBP`,
+  ];
+  for (const c of candidates) {
+    if (c in photos) return c;
+  }
+  return null;
+}
+
+type Item =
+  | { kind: "photo"; path: string }
+  | { kind: "video"; path: string; url: string; posterPath: string | null };
+
+// Merge por orden alfabético de paths (respeta tu numeración 000, 001, 002...)
+const photoMap = new Map(sortedPhotoEntries);
+const videoMap = new Map(sortedVideoEntries);
+const allPaths = [...photoMap.keys(), ...videoMap.keys()].sort((a, b) => a.localeCompare(b));
+
+const items: Item[] = [];
+
+for (const p of allPaths) {
+  if (videoMap.has(p)) {
+    items.push({
+      kind: "video",
+      path: p,
+      url: videoMap.get(p)!,
+      posterPath: findPosterPath(p),
+    });
+    continue;
+  }
+
+  // Si la foto es el poster de un video (mismo basename), no la mostramos como foto
+  const base = stripExt(fileName(p)).toLowerCase();
+  if (videoBaseNames.has(base)) continue;
+
+  items.push({ kind: "photo", path: p });
+}
 ---
 
 <BaseLayout
@@ -14,14 +95,67 @@ const images = import.meta.glob<{ default: ImageMetadata }>(
 >
   <section class="justified-gallery" id="photoswipe">
     {
-      Object.entries(images).map(async ([_path, image], index) => {
-        const { default: imageData } = await image();
+      items.map(async (item, index) => {
+        // VIDEO
+        if (item.kind === "video") {
+          const filename = fileName(item.path);
+
+          // Si no existe poster, usa ratio 16/9 y un fallback visual
+          if (!item.posterPath) {
+            return (
+              <a
+                class="media video"
+                style="--width: 16; --height: 9;"
+                href={item.url}
+                target="_blank"
+                data-fancybox="gallery"
+                data-type="html5video"
+                data-html5video-format={videoMime(filename)}
+                data-width="16"
+                data-height="9"
+              >
+                <div class="video-fallback"><span>Video</span></div>
+              </a>
+            );
+          }
+
+          const { default: posterData } = await photos[item.posterPath]();
+
+          return (
+            <a
+              class="media video"
+              style={`--width: ${posterData.width}; --height: ${posterData.height};`}
+              href={item.url}
+              target="_blank"
+              data-fancybox="gallery"
+              data-type="html5video"
+              data-html5video-format={videoMime(filename)}
+              data-width={posterData.width}
+              data-height={posterData.height}
+            >
+              <Image
+                format="webp"
+                src={posterData}
+                alt=""
+                height={400}
+                loading={index < 20 ? "eager" : "lazy"}
+              />
+            </a>
+          );
+        }
+
+        // FOTO
+        const { default: imageData } = await photos[item.path]();
+
         return (
           <a
+            class="media photo"
             style={`--width: ${imageData.width}; --height: ${imageData.height};`}
             href={imageData.src}
             target="_blank"
             data-fancybox="gallery"
+            data-width={imageData.width}
+            data-height={imageData.height}
           >
             <Image
               format="webp"
@@ -73,34 +207,66 @@ const images = import.meta.glob<{ default: ImageMetadata }>(
     flex-wrap: wrap;
     gap: var(--space);
 
-    a {
+    a.media {
       flex-grow: calc(var(--width) * (100000 / var(--height)));
       flex-basis: calc(var(--min-height) * (var(--width) / var(--height)));
       aspect-ratio: var(--width) / var(--height);
       overflow: hidden;
       opacity: 1;
       transition: all 0.05s ease-in-out;
+      position: relative;
     }
 
-    a img {
+    a.media img {
       display: block;
-      object-fit: cover;
+  const io = new IntersectionObserver(
+    (entries) => {
+      for (const e of entries) {
+        const v = e.target as HTMLVideoElement;
+        if (e.isIntersecting) {
+          // Asegura muted (requisito típico para autoplay)
+          v.muted = true;
+          tryPlay(v);
+        } else {
+          v.pause();
+        }
+      }
+    },
+    { threshold: 0.25 }
+  );
+    a.media.video::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: radial-gradient(circle at 50% 50%, rgba(0,0,0,0.35), rgba(0,0,0,0) 55%);
+    }
+
+    a.media.video::before {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      width: 56px;
+      height: 56px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.45);
+      box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+      pointer-events: none;
+    }
+
+    a.media.video .video-fallback {
       height: 100%;
       width: 100%;
+      display: grid;
+      place-items: center;
+      background: rgba(0,0,0,0.08);
     }
 
-    a:focus-visible {
-      outline: 3px solid var(--outline);
-      outline-offset: 2px;
-      transform: scale(1.05);
-      z-index: 1;
-      border-radius: 2px;
-      box-shadow: 0 2px 4px 2px rgba(0, 0, 0, 0.1);
-    }
-
-    a.hidden {
-      transition: opacity 0.4s ease-in-out;
-      opacity: 0;
+    a.media.video .video-fallback span {
+      font-size: 14px;
+      opacity: 0.8;
     }
 
     &::after {
