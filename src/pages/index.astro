@@ -79,10 +79,12 @@ const items: Item[] = [];
 
 for (const p of allPaths) {
   if (videoMap.has(p)) {
+    const url = videoMap.get(p);
+    if (!url) continue;
     items.push({
       kind: "video",
       path: p,
-      url: videoMap.get(p)!,
+      url,
       posterPath: findPosterPath(p),
     });
     continue;
