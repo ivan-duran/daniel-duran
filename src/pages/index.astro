@@ -14,11 +14,14 @@ const photos = import.meta.glob<{ default: ImageMetadata }>(
 /**
  * 2) Videos como URL (NO pasan por <Image />)
  */
-const videos = import.meta.glob<string>("../images/curate/**/*.{mp4,webm,MP4,WEBM}", {
-  query: "?url",
-  import: "default",
-  eager: true,
-});
+const videos = import.meta.glob<string>(
+  "../images/curate/**/*.{mp4,webm,MP4,WEBM}",
+  {
+    query: "?url",
+    import: "default",
+    eager: true,
+  },
+);
 
 const fileName = (p: string) => p.split("/").pop() ?? p;
 const stripExt = (n: string) => n.replace(/\.[^.]+$/, "");
