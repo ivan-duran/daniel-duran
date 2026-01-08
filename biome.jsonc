@@ -4,7 +4,7 @@
     "includes": [
       "**",
       "!**/build",
-      "!**/dist", 
+      "!**/dist",
       "!**/node_modules",
       "!**/playwright-report",
       "!**/.vercel",
