@@ -15,7 +15,7 @@ const photos = import.meta.glob<{ default: ImageMetadata }>(
  * 2) Videos como URL (NO pasan por <Image />)
  */
 const videos = import.meta.glob<string>(
-  "../images/curate/**/*.{mp4,webm,MP4,WEBM}",
+  "../images/**/*.{mp4,webm,MP4,WEBM}",
   {
     query: "?url",
     import: "default",
