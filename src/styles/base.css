@@ -1,5 +1,5 @@
 :root {
-  color-scheme: light dark;
+  color-scheme: dark;
   --bg: #ffffff;
   --bg-dark: #000000;
   --outline: #ffffff;
@@ -9,6 +9,6 @@
 }
 
 body {
-  background-color: light-dark(var(--bg), var(--bg-dark));
+  background-color: var(--bg-dark);
   font-family: var(--font);
 }

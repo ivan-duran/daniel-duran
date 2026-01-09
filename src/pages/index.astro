@@ -14,14 +14,11 @@ const photos = import.meta.glob<{ default: ImageMetadata }>(
 /**
  * 2) Videos como URL (NO pasan por <Image />)
  */
-const videos = import.meta.glob<string>(
-  "../images/**/*.{mp4,webm,MP4,WEBM}",
-  {
-    query: "?url",
-    import: "default",
-    eager: true,
-  },
-);
+const videos = import.meta.glob<string>("../images/**/*.{mp4,webm,MP4,WEBM}", {
+  query: "?url",
+  import: "default",
+  eager: true,
+});
 
 const fileName = (p: string) => p.split("/").pop() ?? p;
 const stripExt = (n: string) => n.replace(/\.[^.]+$/, "");
@@ -102,8 +99,8 @@ for (const p of allPaths) {
 ---
 
 <BaseLayout
-  title="Astro Photo Grid"
-  description="A minimal, single-page photo gallery for Astro."
+  title="Daniel Durán - Fotos y Videos"
+  description="Fotos y Videos capturados por Daniel Durán"
 >
   <section class="justified-gallery" id="photoswipe">
     {
