@@ -1,10 +1,9 @@
 ---
 import "~/styles/reset.css";
 import "~/styles/base.css";
-
 import smartypants from "smartypants";
 
-const siteName = "Astro ";
+const siteName = "Daniel Durán Vilches";
 
 export interface Props {
   title: string;
@@ -15,13 +14,21 @@ export interface Props {
   };
 }
 
-const { title, description, image } = Astro.props;
+const {
+  title = "Daniel Durán",
+  description = "Portafolio de Daniel Durán: fotografía y registro audiovisual.",
+  image,
+} = Astro.props as Partial<Props>;
 
-const canonicalURL = new URL(Astro.url.pathname, Astro.site);
+
+const canonicalURL = new URL(Astro.url.pathname, Astro.site ?? Astro.url);
 const pageTitle = Astro.url.pathname === "/" ? title : `${title} · ${siteName}`;
+const ogImageUrl = image?.src
+  ? new URL(image.src, Astro.site ?? Astro.url).toString()
+  : undefined;
 ---
 
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -30,12 +37,16 @@ const pageTitle = Astro.url.pathname === "/" ? title : `${title} · ${siteName}`
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <title set:html={smartypants(pageTitle, 1)} />
     <meta name="description" content={smartypants(description, 1)} />
-    <meta property="og:title" content={smartypants(title, 1)} />
+    <meta property="og:title" content={smartypants(pageTitle, 1)} />
     <meta property="og:type" content="website" />
     <meta property="og:description" content={smartypants(description, 1)} />
     <meta property="og:url" content={canonicalURL} />
-    <meta property="og:locale" content="en_US" />
+    <meta property="og:locale" content="es_CL" />
     <meta property="og:site_name" content={siteName} />
+    {ogImageUrl && <meta property="og:image" content={ogImageUrl} />}
+    {image?.alt && <meta property="og:image:alt" content={image.alt} />}
+
+
     {
       image && (
         <>
