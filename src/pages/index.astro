@@ -32,14 +32,15 @@ function videoMime(filename: string) {
 }
 
 /**
- *  3) Metadatos (.md)
+ * 3) Metadatos (.md)
+ * 3) Metadata (.md)
  */
 
 type MetaFM = {
-  title?: string;
-  location?: string;
-  date?: string;
-  tags?: string[];
+  title?: string | null;
+  location?: string | null;
+  date?: string | null;
+  tags?: string[] | null;
 };
 
 const metas = import.meta.glob<MarkdownInstance<MetaFM>>(
@@ -48,13 +49,51 @@ const metas = import.meta.glob<MarkdownInstance<MetaFM>>(
 );
 
 // Función para obtener metadatos por path de los archivos
+// Function to get metadata by file path
 function getMetaForMedia(mediaPath: string) {
   const mdPath = mediaPath.replace(/\.[^.]+$/i, ".md");
   return metas[mdPath]?.frontmatter || {};
 }
 
+const clean = (s: string) => (s ?? "").trim();
+
+const escapeHtml = (s: string) =>
+  s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+
+function buildCaption(meta: MetaFM) {
+  const title = clean(meta.title ?? "");
+  const location = clean(meta.location ?? "");
+  const date = clean(meta.date ?? "");
+  const tags = (meta.tags ?? []).map((t) => clean(t)).filter(Boolean);
+
+  // Si está todo vacío, no mostramos caption
+  if (!title && !location && !date && tags.length === 0) return "";
+
+  const titleHtml = title ? `<h3 class="cap-title">${escapeHtml(title)}</h3>` : "";
+
+  const metaParts = [location, date].filter(Boolean);
+  const metaLine = metaParts.length
+    ? `<div class="cap-meta">${escapeHtml(metaParts.join(" • "))}</div>`
+    : "";
+
+  const tagsHtml = tags.length
+    ? `<ul class="cap-tags">${tags
+        .map((t) => `<li class="cap-tag">${escapeHtml(t)}</li>`)
+        .join("")}</ul>`
+    : "";
+
+  return `<div class="cap">${titleHtml}${metaLine}${tagsHtml}</div>`;
+}
+
+
 
 // Orden determinista (por nombre)
+// Deterministic order (by name)
 const sortedPhotoEntries = Object.entries(photos).sort(([a], [b]) =>
   a.localeCompare(b),
 );
@@ -63,12 +102,14 @@ const sortedVideoEntries = Object.entries(videos).sort(([a], [b]) =>
 );
 
 // Basenames de videos (para excluir posters del listado de fotos)
+// Video basenames (to exclude posters from photo list)
 const videoBaseNames = new Set(
   sortedVideoEntries.map(([p]) => stripExt(fileName(p)).toLowerCase()),
 );
 
 /**
  * Para un video "../images/002.mp4", busca "../images/002.jpg|jpeg|png|webp"
+ * For a video "../images/002.mp4", looks for "../images/002.jpg|jpeg|png|webp"
  */
 function findPosterPath(videoPath: string) {
   const basePath = videoPath.replace(/\.[^.]+$/, "");
@@ -93,6 +134,7 @@ type Item =
   | { kind: "video"; path: string; url: string; posterPath: string | null };
 
 // Merge por orden alfabético de paths (respeta tu numeración 000, 001, 002...)
+// Merge for alphabetical order of paths (respects your numbering 000, 001, 002...)
 const photoMap = new Map(sortedPhotoEntries);
 const videoMap = new Map(sortedVideoEntries);
 const allPaths = [...photoMap.keys(), ...videoMap.keys()].sort((a, b) =>
@@ -114,7 +156,7 @@ for (const p of allPaths) {
     continue;
   }
 
-  // Si la foto es el poster de un video (mismo basename), no la mostramos como foto
+  // If is the photo the poster of a video (same basename), we don't show it as a photo
   const base = stripExt(fileName(p)).toLowerCase();
   if (videoBaseNames.has(base)) continue;
 
@@ -129,7 +171,10 @@ for (const p of allPaths) {
   <section class="justified-gallery" id="photoswipe">
     {
       items.map(async (item, index) => {
-        //const fm = getMetaForMedia(item.path);
+        const meta = getMetaForMedia(item.path);
+        const caption = buildCaption(meta);
+
+
         // VIDEO
         if (item.kind === "video") {
           const filename = fileName(item.path);
@@ -141,6 +186,7 @@ for (const p of allPaths) {
                 class="media video"
                 style="--width: 16; --height: 9;"
                 href={item.url}
+                data-caption={caption}
                 target="_blank"
                 data-fancybox="gallery"
                 data-type="html5video"
@@ -160,6 +206,7 @@ for (const p of allPaths) {
               class="media video"
               style={`--width: ${posterData.width}; --height: ${posterData.height};`}
               href={item.url}
+              data-caption={caption}
               target="_blank"
               data-fancybox="gallery"
               data-type="html5video"
@@ -189,6 +236,7 @@ for (const p of allPaths) {
             class="media photo"
             style={`--width: ${imageData.width}; --height: ${imageData.height};`}
             href={imageData.src}
+            data-caption={caption}
             target="_blank"
             data-fancybox="gallery"
             data-width={imageData.width}
@@ -196,7 +244,7 @@ for (const p of allPaths) {
           >
             <Image
               src={imageData}
-              alt=""
+              alt={meta.title?.trim() || "Foto de Daniel Durán"}
               format="webp"
               quality={85}
               widths={[400, 720, 960, 1200, 1440, 1680, 1920]}
@@ -210,20 +258,20 @@ for (const p of allPaths) {
 </BaseLayout>
 
 <script>
-  import { Fancybox } from "@fancyapps/ui/dist/fancybox/";
+  import { Fancybox } from "@fancyapps/ui";
 
   const mq = window.matchMedia("(max-width: 768px)");
 
   function bindFancybox(){
     // Re-bindea cuando cambia movil/desktop
     try{
-      Fancybox.close();
       Fancybox.unbind("[data-fancybox]");
+      Fancybox.close();
     } catch{}
   
 
     Fancybox.bind("[data-fancybox]", {
-      theme: "auto",
+      theme: "dark",
       mainStyle: {
         "--f-button-width": "44px",
         "--f-button-height": "44px",
