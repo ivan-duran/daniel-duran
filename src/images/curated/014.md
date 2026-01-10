@@ -1,6 +1,6 @@
 ---
 title: "Salto el Calconcillo "
 location: ""
-tag: "Fotografía, Naturaleza, "
+tags: ["Fotografía", "Naturaleza"]
 ---
 

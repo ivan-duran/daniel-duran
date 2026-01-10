@@ -2,6 +2,7 @@
 import { Image } from "astro:assets";
 import BaseLayout from "~/layouts/BaseLayout.astro";
 import "@fancyapps/ui/dist/fancybox/fancybox.css";
+import type { MarkdownInstance } from "astro";
 
 /**
  * 1) Fotos (incluye posters de videos)
@@ -29,6 +30,29 @@ function videoMime(filename: string) {
   if (ext === "webm") return "video/webm";
   return "video/mp4";
 }
+
+/**
+ *  3) Metadatos (.md)
+ */
+
+type MetaFM = {
+  title?: string;
+  location?: string;
+  date?: string;
+  tags?: string[];
+};
+
+const metas = import.meta.glob<MarkdownInstance<MetaFM>>(
+  "../images/**/*.md",
+  { eager: true },
+);
+
+// Función para obtener metadatos por path de los archivos
+function getMetaForMedia(mediaPath: string) {
+  const mdPath = mediaPath.replace(/\.[^.]+$/i, ".md");
+  return metas[mdPath]?.frontmatter || {};
+}
+
 
 // Orden determinista (por nombre)
 const sortedPhotoEntries = Object.entries(photos).sort(([a], [b]) =>
@@ -105,6 +129,7 @@ for (const p of allPaths) {
   <section class="justified-gallery" id="photoswipe">
     {
       items.map(async (item, index) => {
+        //const fm = getMetaForMedia(item.path);
         // VIDEO
         if (item.kind === "video") {
           const filename = fileName(item.path);
