@@ -20,7 +20,6 @@ const {
   image,
 } = Astro.props as Partial<Props>;
 
-
 const canonicalURL = new URL(Astro.url.pathname, Astro.site ?? Astro.url);
 const pageTitle = Astro.url.pathname === "/" ? title : `${title} · ${siteName}`;
 const ogImageUrl = image?.src

@@ -1,14 +1,85 @@
 :root {
   color-scheme: dark;
-  --bg: #ffffff;
-  --bg-dark: #000000;
+  --color-primary: #000000;
+  --color-accent: #ed0876;
+
+  --bg-dark: var(--color-primary);
   --outline: #ffffff;
   --font:
     system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+
+  /* Caption Card */
+  --cap-card: rgba(0, 0, 0, 0.9);
+  --cap-blur: 10px;
+  --cap-radius: 18px;
 }
 
 body {
   background-color: var(--bg-dark);
   font-family: var(--font);
+}
+
+.f-caption {
+  max-width: 820;
+  margin-left: auto !important;
+  margin-right: auto !important;
+  padding: 18px 20px;
+  border-radius: var(--cap-radius);
+  background: var(--cap-card);
+  backdrop-filter: blur(var(--cap-blur));
+  -webkit-backdrop-filter: blur(var(--cap-blur));
+  color: rgba(255, 255, 255, 0.92);
+}
+
+
+/* Título estilo Eyecandy */
+.cap-title {
+  margin: 0 0 8px;
+  font-size: 34px;
+  line-height: 1.05;
+  font-weight: 750;
+  color: var(--color-accent);
+  letter-spacing: -0.02em;
+}
+
+/* Línea de meta (lugar · fecha) */
+.cap-meta {
+  margin: 0 0 10px;
+  font-size: 16px;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+/* Descripción */
+.cap-desc {
+  margin: 0 0 14px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: #ffffff;
+}
+
+/* Tags tipo “píldora” */
+.cap-tags {
+  list-style: none;
+  padding: 0;
+  margin: 12px 0 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.cap-tag {
+  list-style: none;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--color-accent);
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.f-caption .cap {
+  text-align: left;
 }
