@@ -43,10 +43,9 @@ type MetaFM = {
   tags?: string[] | null;
 };
 
-const metas = import.meta.glob<MarkdownInstance<MetaFM>>(
-  "../images/**/*.md",
-  { eager: true },
-);
+const metas = import.meta.glob<MarkdownInstance<MetaFM>>("../images/**/*.md", {
+  eager: true,
+});
 
 // Función para obtener metadatos por path de los archivos
 // Function to get metadata by file path
@@ -74,7 +73,9 @@ function buildCaption(meta: MetaFM) {
   // Si está todo vacío, no mostramos caption
   if (!title && !location && !date && tags.length === 0) return "";
 
-  const titleHtml = title ? `<h3 class="cap-title">${escapeHtml(title)}</h3>` : "";
+  const titleHtml = title
+    ? `<h3 class="cap-title">${escapeHtml(title)}</h3>`
+    : "";
 
   const metaParts = [location, date].filter(Boolean);
   const metaLine = metaParts.length
@@ -89,8 +90,6 @@ function buildCaption(meta: MetaFM) {
 
   return `<div class="cap">${titleHtml}${metaLine}${tagsHtml}</div>`;
 }
-
-
 
 // Orden determinista (por nombre)
 // Deterministic order (by name)
