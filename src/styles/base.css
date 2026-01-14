@@ -21,8 +21,8 @@ body {
 }
 
 .f-caption {
-  max-width: 820;
-  margin: 0 auto;
+  max-width: 820px;;
+  margin: 0 0;
   padding: 18px 20px;
   border-radius: var(--cap-radius);
   background: var(--cap-card);
@@ -79,5 +79,5 @@ body {
 }
 
 .f-caption .cap {
-  text-align: left;
+  text-align: start;
 }

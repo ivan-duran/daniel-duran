@@ -44,16 +44,6 @@ const ogImageUrl = image?.src
     <meta property="og:site_name" content={siteName} />
     {ogImageUrl && <meta property="og:image" content={ogImageUrl} />}
     {image?.alt && <meta property="og:image:alt" content={image.alt} />}
-
-
-    {
-      image && (
-        <>
-          <meta property="og:image" content={image.src} />
-          <meta property="og:image:alt" content={image.alt} />
-        </>
-      )
-    }
   </head>
   <body>
     <slot />

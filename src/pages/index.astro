@@ -265,6 +265,38 @@ for (const p of allPaths) {
 
   const mq = window.matchMedia("(max-width: 768px)");
 
+  function syncCaptionWidth(fancybox: { getSlide: () => any }, tries = 10) {
+    const slide = fancybox?.getSlide?.();
+    const slideEl = slide?.el;
+    if (!slideEl) return;
+
+    const cap = slideEl.querySelector(".f-caption");
+    if (!cap) return;
+
+    // 1) Foto (panzoom viewport)
+    let target =
+      slideEl.querySelector(".f-panzoom__viewport") ||
+      // 2) Video HTML5
+      slideEl.querySelector("video") ||
+      // 3) Fallback: el wrapper de panzoom si existe
+      slideEl.querySelector(".f-panzoom__wrapper") ||
+      // 4) Último recurso: algún content container de Fancybox
+      slideEl.querySelector(".fancybox__content") ||
+      slideEl;
+
+    const w = (target as Element).getBoundingClientRect().width;
+
+    if (!w) {
+      if (tries <= 0) return;
+      requestAnimationFrame(() => syncCaptionWidth(fancybox, tries - 1));
+      return;
+    }
+
+    cap.style.width = `${Math.round(w)}px`;
+  }
+
+
+
   function bindFancybox(){
     // Re-bindea cuando cambia movil/desktop
     try{
@@ -280,6 +312,17 @@ for (const p of allPaths) {
         "--f-button-height": "44px",
         "--f-button-border-radius": "50%",
         "--f-toolbar-padding": "16px",
+      },
+      on: {
+        "Carousel.ready": (fancybox) => {
+          syncCaptionWidth(fancybox);
+        },
+        "Carousel.change": (fancybox) => {
+          syncCaptionWidth(fancybox);
+        },
+        "Carousel.contentReady": (fancybox) => {
+          syncCaptionWidth(fancybox);
+        },
       },
       Carousel: {
         Arrows: mq.matches ? false : {},
@@ -297,6 +340,12 @@ for (const p of allPaths) {
   }
 
   bindFancybox();
+
+  window.addEventListener("resize", () => {
+    const inst = Fancybox.getInstance?.();
+    if (inst) syncCaptionWidth(inst);
+  });
+
 
   // Escuchar cambios
   if (mq.addEventListener) {
