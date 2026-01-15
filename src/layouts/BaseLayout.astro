@@ -2,6 +2,8 @@
 import "~/styles/reset.css";
 import "~/styles/base.css";
 import smartypants from "smartypants";
+// Importamos el nuevo Header
+import Header from "~/components/Header.astro";
 
 const siteName = "Daniel Durán Vilches";
 
@@ -22,6 +24,7 @@ const {
 
 const canonicalURL = new URL(Astro.url.pathname, Astro.site ?? Astro.url);
 const pageTitle = Astro.url.pathname === "/" ? title : `${title} · ${siteName}`;
+
 const ogImageUrl = image?.src
   ? new URL(image.src, Astro.site ?? Astro.url).toString()
   : undefined;
@@ -42,10 +45,15 @@ const ogImageUrl = image?.src
     <meta property="og:url" content={canonicalURL} />
     <meta property="og:locale" content="es_CL" />
     <meta property="og:site_name" content={siteName} />
+  
     {ogImageUrl && <meta property="og:image" content={ogImageUrl} />}
     {image?.alt && <meta property="og:image:alt" content={image.alt} />}
   </head>
   <body>
-    <slot />
+    <Header />
+    
+    <main>
+      <slot />
+    </main>
   </body>
 </html>

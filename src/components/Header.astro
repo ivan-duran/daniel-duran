@@ -1,0 +1,118 @@
+---
+const siteName = "Daniel Durán Vilches";
+const role = "Periodista";
+
+const socials = [
+  { name: "Instagram", url: "https://instagram.com/danielduranvilches" }, 
+  { name: "LinkedIn", url: "https://www.linkedin.com/in/danielduranvilches" },
+];
+---
+
+<header class="main-header">
+  <div class="header-inner">
+    
+    <div class="brand">
+      <a href="/" class="logo">
+        {siteName}
+      </a>
+      <span class="role">{role}</span>
+    </div>
+    
+    <nav class="social-nav">
+      {socials.map((social) => (
+        <a href={social.url} target="_blank" rel="noopener noreferrer">
+          {social.name}
+        </a>
+      ))}
+    </nav>
+
+  </div>
+</header>
+
+<style>
+  .main-header {
+    width: 100%;
+    /* Padding responsive: usa variables si existen, sino fallback */
+    padding: 2rem var(--padding, 20px) 1.5rem; 
+    background-color: var(--bg-dark);
+  }
+
+  .header-inner {
+    display: flex;
+    justify-content: space-between; /* Separa Marca a la izq y Redes a la der */
+    align-items: center; /* Centrado vertical del bloque completo */
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  }
+
+  /* --- Estilos del Bloque de Marca --- */
+  .brand {
+    display: flex;
+    flex-direction: column; /* Esto pone el rol DEBAJO del nombre */
+    line-height: 1.1;       /* Mantiene el rol pegadito al nombre */
+    gap: 2px;               /* Pequeño espacio extra si es necesario */
+  }
+
+  .logo {
+    font-family: var(--font);
+    font-size: 1.8rem;      /* Tamaño grande para el nombre */
+    font-weight: 800;
+    text-decoration: none;
+    color: #ffffff;
+    text-transform: uppercase;
+    letter-spacing: -0.02em;
+    transition: color 0.2s ease;
+  }
+
+  .logo:hover {
+    color: var(--color-accent);
+  }
+
+  .role {
+    font-family: var(--font);
+    font-size: 0.9rem;      /* Tamaño más pequeño para el rol */
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;  /* Espaciado elegante entre letras */
+    color: rgba(255, 255, 255, 0.6); /* Color grisáceo */
+  }
+
+  /* --- Estilos de Redes Sociales --- */
+  .social-nav {
+    display: flex;
+    gap: 1.5rem;
+    align-items: center;
+  }
+
+  .social-nav a {
+    color: #ffffff;
+    text-decoration: none;
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    transition: color 0.2s ease;
+    opacity: 0.7;
+  }
+
+  .social-nav a:hover {
+    color: var(--color-accent);
+    opacity: 1;
+  }
+
+  /* --- Responsive (Móvil) --- */
+  @media (max-width: 600px) {
+    .header-inner {
+      flex-direction: column; /* En móvil, todo en columna */
+      align-items: center;
+      text-align: center;
+      gap: 1rem;
+    }
+    
+    .brand {
+      align-items: center; /* Centra el nombre y rol en móvil */
+    }
+  }
+</style>

@@ -1,0 +1,385 @@
+---
+import "@fancyapps/ui/dist/fancybox/fancybox.css";
+import { Image } from "astro:assets";
+import type { MarkdownInstance } from "astro";
+
+/* -------------------------------------------------------------------------- */
+/* LÓGICA DE DATOS                              */
+/* -------------------------------------------------------------------------- */
+
+// 1. Fotos
+const photos = import.meta.glob<{ default: ImageMetadata }>(
+  "../images/**/*.{jpg,jpeg,png,webp,JPG,JPEG,PNG,WEBP}",
+);
+
+// 2. Videos
+const videos = import.meta.glob<string>("../images/**/*.{mp4,webm,MP4,WEBM}", {
+  query: "?url",
+  import: "default",
+  eager: true,
+});
+
+// 3. Metadata
+type MetaFM = {
+  title?: string | null;
+  location?: string | null;
+  date?: string | null;
+  description?: string | null;
+  tags?: string[] | null;
+};
+const metas = import.meta.glob<MarkdownInstance<MetaFM>>("../images/**/*.md", {
+  eager: true,
+});
+
+/* -------------------------------------------------------------------------- */
+/* HELPERS                                   */
+/* -------------------------------------------------------------------------- */
+
+const fileName = (p: string) => p.split("/").pop() ?? p;
+const stripExt = (n: string) => n.replace(/\.[^.]+$/, "");
+const getExt = (n: string) => (n.match(/\.([^.]+)$/)?.[1] ?? "").toLowerCase();
+
+function videoMime(filename: string) {
+  const ext = getExt(filename);
+  if (ext === "webm") return "video/webm";
+  return "video/mp4";
+}
+
+function getMetaForMedia(mediaPath: string) {
+  const mdPath = mediaPath.replace(/\.[^.]+$/i, ".md");
+  return metas[mdPath]?.frontmatter || {};
+}
+
+const clean = (s: string) => (s ?? "").trim();
+const escapeHtml = (s: string) =>
+  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+
+function buildCaption(meta: MetaFM) {
+  const desc = clean(meta.description ?? "");
+  const title = clean(meta.title ?? "");
+  const location = clean(meta.location ?? "");
+  const date = clean(meta.date ?? "");
+  const tags = (meta.tags ?? []).map((t) => clean(t)).filter(Boolean);
+
+  if (!title && !location && !date && tags.length === 0) return "";
+
+  const titleHtml = title ? `<h3 class="cap-title">${escapeHtml(title)}</h3>` : "";
+  const metaParts = [location, date].filter(Boolean);
+  const metaLine = metaParts.length ? `<div class="cap-meta">${escapeHtml(metaParts.join(" • "))}</div>` : "";
+  const descHtml = desc ? `<p class="cap-desc">${escapeHtml(desc)}</p>` : "";
+  const tagsHtml = tags.length
+    ? `<ul class="cap-tags">${tags.map((t) => `<li class="cap-tag">${escapeHtml(t)}</li>`).join("")}</ul>`
+    : "";
+  return `<div class="cap">${titleHtml}${metaLine}${descHtml}${tagsHtml}</div>`;
+}
+
+/* -------------------------------------------------------------------------- */
+/* PROCESAMIENTO ITEMS                            */
+/* -------------------------------------------------------------------------- */
+
+const sortedPhotoEntries = Object.entries(photos).sort(([a], [b]) => a.localeCompare(b));
+const sortedVideoEntries = Object.entries(videos).sort(([a], [b]) => a.localeCompare(b));
+
+const videoBaseNames = new Set(
+  sortedVideoEntries.map(([p]) => stripExt(fileName(p)).toLowerCase()),
+);
+
+function findPosterPath(videoPath: string) {
+  const basePath = videoPath.replace(/\.[^.]+$/, "");
+  const candidates = [
+    `${basePath}.jpg`, `${basePath}.jpeg`, `${basePath}.png`, `${basePath}.webp`,
+    `${basePath}.JPG`, `${basePath}.JPEG`, `${basePath}.PNG`, `${basePath}.WEBP`,
+  ];
+  for (const c of candidates) {
+    if (c in photos) return c;
+  }
+  return null;
+}
+
+type Item =
+  | { kind: "photo"; path: string }
+  | { kind: "video"; path: string; url: string; posterPath: string | null };
+
+const photoMap = new Map(sortedPhotoEntries);
+const videoMap = new Map(sortedVideoEntries);
+const allPaths = [...photoMap.keys(), ...videoMap.keys()].sort((a, b) => a.localeCompare(b));
+
+const items: Item[] = [];
+for (const p of allPaths) {
+  if (videoMap.has(p)) {
+    const url = videoMap.get(p);
+    if (!url) continue;
+    items.push({ kind: "video", path: p, url, posterPath: findPosterPath(p) });
+    continue;
+  }
+  const base = stripExt(fileName(p)).toLowerCase();
+  if (videoBaseNames.has(base)) continue;
+  items.push({ kind: "photo", path: p });
+}
+---
+
+<section class="justified-gallery" id="photoswipe">
+  {
+    items.map(async (item, index) => {
+      const meta = getMetaForMedia(item.path);
+      const caption = buildCaption(meta);
+
+      // VIDEO
+      if (item.kind === "video") {
+        const filename = fileName(item.path);
+        // Sin poster
+        if (!item.posterPath) {
+          return (
+            <a
+              class="media video"
+              style="--width: 16; --height: 9;"
+              href={item.url}
+              data-caption={caption}
+              target="_blank"
+              data-fancybox="gallery"
+              data-type="html5video"
+              data-html5video-format={videoMime(filename)}
+              data-width="16"
+              data-height="9"
+            >
+              <div class="video-fallback"><span>Video</span></div>
+            </a>
+          );
+        }
+        // Con poster
+        const { default: posterData } = await photos[item.posterPath]();
+        return (
+          <a
+            class="media video"
+            style={`--width: ${posterData.width}; --height: ${posterData.height};`}
+            href={item.url}
+            data-caption={caption}
+            target="_blank"
+            data-fancybox="gallery"
+            data-type="html5video"
+            data-html5video-format={videoMime(filename)}
+            data-width={posterData.width}
+            data-height={posterData.height}
+            data-thumb={posterData.src}
+          >
+            <video
+              class="tile-video"
+              muted
+              loop
+              playsinline
+              preload="none"
+              poster={posterData.src}
+              data-src={item.url}
+            />
+          </a>
+        );
+      }
+
+      // FOTO
+      const { default: imageData } = await photos[item.path]();
+      return (
+        <a
+          class="media photo"
+          style={`--width: ${imageData.width}; --height: ${imageData.height};`}
+          href={imageData.src}
+          data-caption={caption}
+          target="_blank"
+          data-fancybox="gallery"
+          data-width={imageData.width}
+          data-height={imageData.height}
+        >
+          <Image
+            src={imageData}
+            alt={meta.title?.trim() || "Foto de Daniel Durán"}
+            format="webp"
+            quality={85}
+            widths={[400, 720, 960, 1200, 1440, 1680, 1920]}
+            loading={index < 20 ? "eager" : "lazy"}
+          />
+        </a>
+      );
+    })
+  }
+</section>
+
+<script>
+  import { Fancybox } from "@fancyapps/ui";
+
+  const mq = window.matchMedia("(max-width: 768px)");
+
+  function syncCaptionWidth(fancybox: any, tries = 10) {
+    const slide = fancybox?.getSlide?.();
+    const slideEl = slide?.el;
+    if (!slideEl) return;
+    const cap = slideEl.querySelector(".f-caption");
+    if (!cap) return;
+    
+    let target =
+      slideEl.querySelector(".f-panzoom__viewport") ||
+      slideEl.querySelector(".f-html") ||
+      slideEl.querySelector(".f-html5video, video") ||
+      slideEl.querySelector(".f-panzoom__wrapper") ||
+      slideEl;
+      
+    const w = (target as Element).getBoundingClientRect().width;
+
+    if (tries > 0) {
+      requestAnimationFrame(() => syncCaptionWidth(fancybox, tries - 1));
+      setTimeout(() => syncCaptionWidth(fancybox, tries - 1), 10);
+    }
+
+    cap.style.width = `${Math.round(w)}px`;
+    cap.style.maxWidth = `${Math.round(w)}px`;
+  }
+
+  function bindFancybox() {
+    try {
+      Fancybox.unbind("[data-fancybox]");
+      Fancybox.close();
+    } catch {}
+
+    Fancybox.bind("[data-fancybox]", {
+      theme: "dark",
+      mainStyle: {
+        "--f-button-width": "44px",
+        "--f-button-height": "44px",
+        "--f-button-border-radius": "50%",
+        "--f-toolbar-padding": "16px",
+      },
+      on: {
+        "Carousel.ready": (f) => syncCaptionWidth(f),
+        "Carousel.change": (f) => syncCaptionWidth(f),
+        "Carousel.contentReady": (f) => syncCaptionWidth(f),
+      },
+      Carousel: {
+        Arrows: mq.matches ? false : {},
+        Thumbs: false,
+        Toolbar: {
+          display: {
+            left: [],
+            middle: [],
+            right: ["close"],
+          },
+        },
+        transition: "slide",
+      },
+    });
+  }
+
+  bindFancybox();
+
+  window.addEventListener("resize", () => {
+    const inst = Fancybox.getInstance?.();
+    if (inst) syncCaptionWidth(inst);
+  });
+
+  if (mq.addEventListener) {
+    mq.addEventListener("change", bindFancybox);
+  } else {
+    mq.addListener(bindFancybox);
+  }
+
+  /* Lazy Load Videos Grid */
+  const videos = document.querySelectorAll("video.tile-video[data-src]");
+  async function tryPlay(v: HTMLVideoElement) {
+    v.muted = true;
+    try {
+      await v.play();
+    } catch {}
+  }
+
+  const io = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        const v = entry.target as HTMLVideoElement;
+        if (entry.isIntersecting) {
+          if (!v.src && v.dataset.src) v.src = v.dataset.src;
+          tryPlay(v);
+        } else {
+          v.pause();
+        }
+      }
+    },
+    { threshold: 0.35 }
+  );
+  videos.forEach((v) => io.observe(v));
+</script>
+
+<style is:global>
+  .justified-gallery {
+    --padding: max(1.0vw, 12px);
+    --space: clamp(5px, 0.5vw, 10px);
+    --min-height: clamp(270px, 25vw, 520px);
+
+    padding: var(--padding);
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space);
+
+    a.media {
+      flex-grow: calc(var(--width) * (100000 / var(--height)));
+      flex-basis: calc(var(--min-height) * (var(--width) / var(--height)));
+      aspect-ratio: var(--width) / var(--height);
+      overflow: hidden;
+      opacity: 0.9;
+      transition: all 0.05s ease-in-out;
+      position: relative;
+      border-radius: 18px;
+    }
+
+    a.media img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: inherit;
+    }
+
+    a.media.video .video-fallback {
+      height: 100%;
+      width: 100%;
+      display: grid;
+      place-items: center;
+      background: rgba(0, 0, 0, 0.9);
+    }
+    a.media.video .video-fallback span {
+      font-size: 14px;
+      opacity: 0.8;
+    }
+
+    a.media video.tile-video {
+      height: 100%;
+      width: 100%;
+      object-fit: cover;
+      display: block;
+      pointer-events: none;
+      border-radius: inherit;
+    }
+  }
+
+  /* Fancybox Overrides */
+  .fancybox__container {
+    --f-caption-padding: 0px 4px;
+    --media-radius: 18px;
+  }
+  .fancybox__container .f-panzoom__wrapper,
+  .fancybox__container .f-panzoom__viewport,
+  .fancybox__container .f-panzoom__content,
+  .fancybox__container .f-html,
+  .fancybox__container video.f-html5video,
+  .fancybox__container .f-html5video {
+    border-radius: var(--media-radius);
+    overflow: hidden;
+  }
+  .fancybox__container video.f-html5video,
+  .fancybox__container .f-html5video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    background: transparent;
+    display: block;
+  }
+  .fancybox__container .f-html {
+    background: transparent;
+  }
+</style>
