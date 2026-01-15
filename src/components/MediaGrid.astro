@@ -203,33 +203,47 @@ for (const p of allPaths) {
 </section>
 
 <script>
-  import { Fancybox } from "@fancyapps/ui";
+  import { Fancybox, Panzoom } from "@fancyapps/ui";
+
+  (window as any).Fancybox = Fancybox; // Para depuración en consola
 
   const mq = window.matchMedia("(max-width: 768px)");
+  let resizeObserver: ResizeObserver | null = null;
 
-  function syncCaptionWidth(fancybox: any, tries = 10) {
-    const slide = fancybox?.getSlide?.();
+  function syncCaptionWidth(fancybox: any) {
+    const slide = fancybox?.getSlide();
     const slideEl = slide?.el;
+    
     if (!slideEl) return;
+
     const cap = slideEl.querySelector(".f-caption");
     if (!cap) return;
-    
-    let target =
+
+    const target =
       slideEl.querySelector(".f-panzoom__viewport") ||
       slideEl.querySelector(".f-html") ||
-      slideEl.querySelector(".f-html5video, video") ||
-      slideEl.querySelector(".f-panzoom__wrapper") ||
-      slideEl;
-      
-    const w = (target as Element).getBoundingClientRect().width;
+      slideEl.querySelector(".f-html5video") ||
+      slideEl.querySelector("video");
 
-    if (tries > 0) {
-      requestAnimationFrame(() => syncCaptionWidth(fancybox, tries - 1));
-      setTimeout(() => syncCaptionWidth(fancybox, tries - 1), 10);
-    }
+    if (!target) return;
 
-    cap.style.width = `${Math.round(w)}px`;
-    cap.style.maxWidth = `${Math.round(w)}px`;
+    // 1. Limpiamos observadores anteriores
+    if (resizeObserver) resizeObserver.disconnect();
+
+    // 2. Creamos un nuevo observador
+    resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        const width = entry.contentRect.width;
+        if (width > 0) {
+          cap.style.width = `${Math.round(width)}px`;
+          cap.style.maxWidth = `${Math.round(width)}px`;
+          cap.style.margin = "0 auto"; 
+        }
+      }
+    });
+
+    // 3. Empezamos a vigilar
+    resizeObserver.observe(target);
   }
 
   function bindFancybox() {
@@ -238,6 +252,7 @@ for (const p of allPaths) {
       Fancybox.close();
     } catch {}
 
+    // SOLUCIÓN AL ERROR: Agregamos 'as any' después del objeto de opciones
     Fancybox.bind("[data-fancybox]", {
       theme: "dark",
       mainStyle: {
@@ -246,10 +261,16 @@ for (const p of allPaths) {
         "--f-button-border-radius": "50%",
         "--f-toolbar-padding": "16px",
       },
+
       on: {
-        "Carousel.ready": (f) => syncCaptionWidth(f),
-        "Carousel.change": (f) => syncCaptionWidth(f),
-        "Carousel.contentReady": (f) => syncCaptionWidth(f),
+        "Carousel.contentReady": (f: any) => syncCaptionWidth(f),
+        "Carousel.change": (f: any) => syncCaptionWidth(f),
+        "close": () => {
+           if (resizeObserver) {
+             resizeObserver.disconnect();
+             resizeObserver = null;
+           }
+        },
       },
       Carousel: {
         Arrows: mq.matches ? false : {},
@@ -263,21 +284,11 @@ for (const p of allPaths) {
         },
         transition: "slide",
       },
-    });
+    } as any); 
+    // ^^^ AQUÍ ESTÁ EL TRUCO: 'as any' le dice a TS que confíe en nuestras opciones
   }
 
   bindFancybox();
-
-  window.addEventListener("resize", () => {
-    const inst = Fancybox.getInstance?.();
-    if (inst) syncCaptionWidth(inst);
-  });
-
-  if (mq.addEventListener) {
-    mq.addEventListener("change", bindFancybox);
-  } else {
-    mq.addListener(bindFancybox);
-  }
 
   /* Lazy Load Videos Grid */
   const videos = document.querySelectorAll("video.tile-video[data-src]");
@@ -362,15 +373,28 @@ for (const p of allPaths) {
     --f-caption-padding: 0px 4px;
     --media-radius: 18px;
   }
+
+  /* Bordes redondeados en todos los contenidos */
   .fancybox__container .f-panzoom__wrapper,
+  .fancybox__container .f-panzoom__wrapper.will-zoom-in,
+  .fancybox__container .f-panzoom__content ,
+  .fancybox__container .f-panzoom__viewport{
+    cursor: default;
+  }
+
+  /* Bordes redondeados en todos los contenidos */
+  .fancybox__container .f-panzoom__wrapper,
+  .fancybox__container .f-panzoom__wrapper.will-zoom-in,
+  .fancybox__container .f-panzoom__content ,
   .fancybox__container .f-panzoom__viewport,
-  .fancybox__container .f-panzoom__content,
   .fancybox__container .f-html,
   .fancybox__container video.f-html5video,
   .fancybox__container .f-html5video {
     border-radius: var(--media-radius);
     overflow: hidden;
   }
+
+  /* Ajustes de video para que llene el contenedor redondeado */
   .fancybox__container video.f-html5video,
   .fancybox__container .f-html5video {
     width: 100%;
@@ -379,7 +403,13 @@ for (const p of allPaths) {
     background: transparent;
     display: block;
   }
+
+  /* Quitar fondo en HTML5 video */
   .fancybox__container .f-html {
     background: transparent;
+  }
+
+  .fancybox__container img.f-panzoom__content {
+    pointer-events: none !important;
   }
 </style>
