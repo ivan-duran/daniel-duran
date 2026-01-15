@@ -1,7 +1,7 @@
 ---
+import "@fancyapps/ui/dist/fancybox/fancybox.css";
 import { Image } from "astro:assets";
 import BaseLayout from "~/layouts/BaseLayout.astro";
-import "@fancyapps/ui/dist/fancybox/fancybox.css";
 import type { MarkdownInstance } from "astro";
 
 /**
@@ -273,26 +273,28 @@ for (const p of allPaths) {
     const cap = slideEl.querySelector(".f-caption");
     if (!cap) return;
 
-    // 1) Foto (panzoom viewport)
+
     let target =
       slideEl.querySelector(".f-panzoom__viewport") ||
-      // 2) Video HTML5
-      slideEl.querySelector("video") ||
-      // 3) Fallback: el wrapper de panzoom si existe
+
+      slideEl.querySelector(".f-html") ||
+
+      slideEl.querySelector(".f-html5video, video") ||
+
       slideEl.querySelector(".f-panzoom__wrapper") ||
-      // 4) Último recurso: algún content container de Fancybox
-      slideEl.querySelector(".fancybox__content") ||
+
       slideEl;
 
     const w = (target as Element).getBoundingClientRect().width;
 
-    if (!w) {
-      if (tries <= 0) return;
+    if (tries>0){
       requestAnimationFrame(() => syncCaptionWidth(fancybox, tries - 1));
-      return;
+      setTimeout(() => syncCaptionWidth(fancybox, tries - 1), 10);
     }
 
     cap.style.width = `${Math.round(w)}px`;
+    cap.style.maxWidth = `${Math.round(w)}px`;
+
   }
 
 
@@ -391,7 +393,7 @@ for (const p of allPaths) {
 
 </script>
 
-<style>
+<style is:global>
   .justified-gallery {
     --padding: max(1.0vw, 12px);
     --space: clamp(5px, 0.5vw, 10px);
@@ -443,10 +445,58 @@ for (const p of allPaths) {
       pointer-events: none;
       border-radius: inherit;
     }
-
-    &::after {
-      content: " ";
-      flex-grow: 1000000000;
-    }
   }
+
+  .fancybox__container {
+    --f-caption-padding: 0px 4px;
+
+  }
+
+  /* Radio consistente */
+  .fancybox__container {
+    --media-radius: 18px;
+  }
+
+  /* FOTOS: redondear el contenedor de panzoom */
+  .fancybox__container .f-panzoom__wrapper,
+  .fancybox__container .f-panzoom__viewport {
+    border-radius: var(--media-radius);
+    overflow: hidden;
+  }
+
+  /* A veces la imagen en sí también necesita heredar */
+  .fancybox__container .f-panzoom__content {
+    border-radius: var(--media-radius);
+  }
+
+  /* VIDEOS: redondear wrapper y video */
+  .fancybox__container .f-html {
+    border-radius: var(--media-radius);
+    overflow: hidden;
+  }
+
+  .fancybox__container video.f-html5video,
+  .fancybox__container .f-html5video {
+    border-radius: var(--media-radius);
+    overflow: hidden;
+  }
+  
+
+
+  /* VIDEO: que rellene y no deje bandas negras */
+  .fancybox__container video.f-html5video,
+  .fancybox__container .f-html5video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    background: transparent;
+    display: block;
+  }
+
+  /* Asegura que el wrapper no pinte negro detrás */
+  .fancybox__container .f-html {
+    background: transparent;
+  }
+
+
 </style>
