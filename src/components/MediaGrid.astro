@@ -252,7 +252,6 @@ for (const p of allPaths) {
       Fancybox.close();
     } catch {}
 
-    // SOLUCIÓN AL ERROR: Agregamos 'as any' después del objeto de opciones
     Fancybox.bind("[data-fancybox]", {
       theme: "dark",
       mainStyle: {
@@ -273,7 +272,7 @@ for (const p of allPaths) {
         },
       },
       Carousel: {
-        Arrows: mq.matches ? false : {},
+        Arrows: true, //mq.matches ? false : {} si no queremos flechas en móvil
         Thumbs: false,
         Toolbar: {
           display: {
@@ -285,7 +284,6 @@ for (const p of allPaths) {
         transition: "slide",
       },
     } as any); 
-    // ^^^ AQUÍ ESTÁ EL TRUCO: 'as any' le dice a TS que confíe en nuestras opciones
   }
 
   bindFancybox();
@@ -374,11 +372,16 @@ for (const p of allPaths) {
     --media-radius: 18px;
   }
 
-  /* Bordes redondeados en todos los contenidos */
+  /* Cursor por defecto (no zoom) */
   .fancybox__container .f-panzoom__wrapper,
   .fancybox__container .f-panzoom__wrapper.will-zoom-in,
   .fancybox__container .f-panzoom__content ,
   .fancybox__container .f-panzoom__viewport{
+    cursor: default;
+    pointer-events: none;
+  }
+
+  .fancybox__slide {
     cursor: default;
   }
 
