@@ -227,49 +227,47 @@ for (const p of allPaths) {
   <button id="btnShowMore" class="btn-show-more">
     Mostrar más
   </button>
+
+  <button id="btnScrollNext" class="btn-scroll-next" aria-label="Ir a la siguiente sección">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M7 13l5 5 5-5M7 6l5 5 5-5"/>
+    </svg>
+  </button>
 </div>
 
 <script>
-  import { Fancybox, Panzoom } from "@fancyapps/ui";
+  import { Fancybox } from "@fancyapps/ui";
 
-  (window as any).Fancybox = Fancybox; // Para depuración en consola
+  (window as any).Fancybox = Fancybox;
 
-  const mq = window.matchMedia("(max-width: 768px)");
+  /* -------------------------------------------------------------------------- */
+  /* FANCYBOX SETUP                                                           */
+  /* -------------------------------------------------------------------------- */
   let resizeObserver: ResizeObserver | null = null;
 
   function syncCaptionWidth(fancybox: any) {
     const slide = fancybox?.getSlide();
     const slideEl = slide?.el;
-    
     if (!slideEl) return;
-
     const cap = slideEl.querySelector(".f-caption");
     if (!cap) return;
-
     const target =
       slideEl.querySelector(".f-panzoom__viewport") ||
       slideEl.querySelector(".f-html") ||
       slideEl.querySelector(".f-html5video") ||
       slideEl.querySelector("video");
-
     if (!target) return;
-
-    // 1. Limpiamos observadores anteriores
     if (resizeObserver) resizeObserver.disconnect();
-
-    // 2. Creamos un nuevo observador
     resizeObserver = new ResizeObserver((entries) => {
       for (const entry of entries) {
         const width = entry.contentRect.width;
         if (width > 0) {
           cap.style.width = `${Math.round(width)}px`;
           cap.style.maxWidth = `${Math.round(width)}px`;
-          cap.style.margin = "0 auto"; 
+          cap.style.margin = "0 auto";
         }
       }
     });
-
-    // 3. Empezamos a vigilar
     resizeObserver.observe(target);
   }
 
@@ -278,7 +276,6 @@ for (const p of allPaths) {
       Fancybox.unbind("[data-fancybox]");
       Fancybox.close();
     } catch {}
-
     Fancybox.bind("[data-fancybox]", {
       theme: "dark",
       mainStyle: {
@@ -287,7 +284,6 @@ for (const p of allPaths) {
         "--f-button-border-radius": "50%",
         "--f-toolbar-padding": "16px",
       },
-
       on: {
         "Carousel.contentReady": (f: any) => syncCaptionWidth(f),
         "Carousel.change": (f: any) => syncCaptionWidth(f),
@@ -299,14 +295,10 @@ for (const p of allPaths) {
         },
       },
       Carousel: {
-        Arrows: true, //mq.matches ? false : {} si no queremos flechas en móvil
+        Arrows: true,
         Thumbs: false,
         Toolbar: {
-          display: {
-            left: [],
-            middle: [],
-            right: ["close"],
-          },
+          display: { right: ["close"] },
         },
         transition: "slide",
       },
@@ -315,13 +307,13 @@ for (const p of allPaths) {
 
   bindFancybox();
 
-  /* Lazy Load Videos Grid */
+  /* -------------------------------------------------------------------------- */
+  /* LAZY LOAD VIDEOS                                                         */
+  /* -------------------------------------------------------------------------- */
   const videos = document.querySelectorAll("video.tile-video[data-src]");
   async function tryPlay(v: HTMLVideoElement) {
     v.muted = true;
-    try {
-      await v.play();
-    } catch {}
+    try { await v.play(); } catch {}
   }
 
   const io = new IntersectionObserver(
@@ -340,21 +332,24 @@ for (const p of allPaths) {
   );
   videos.forEach((v) => io.observe(v));
 
+  /* -------------------------------------------------------------------------- */
+  /* LOGICA FILAS Y BOTONES                                                   */
+  /* -------------------------------------------------------------------------- */
   const grid = document.getElementById("photoswipe");
   const btnContainer = document.getElementById("loadMoreContainer");
   const btn = document.getElementById("btnShowMore");
+  const scrollBtn = document.getElementById("btnScrollNext");
   let isExpanded = false;
 
   function calculateRows() {
-    // Si ya le dimos a "mostrar más", no ocultamos nada
+    // Si ya expandimos, no hacemos nada
     if (isExpanded) return;
-
     if (!grid) return;
 
     const items = Array.from(grid.children) as HTMLElement[];
     if (items.length === 0) return;
 
-    // Reseteamos visibilidad para calcular bien las posiciones
+    // Reseteamos visibilidad para calcular bien
     items.forEach(el => el.classList.remove("hidden-item"));
     
     let currentRow = 1;
@@ -363,51 +358,74 @@ for (const p of allPaths) {
 
     for (let i = 0; i < items.length; i++) {
       const el = items[i];
-      
-      // Si el elemento actual está más abajo que el anterior (con un margen de error de 5px), es nueva fila
+      // Detectar cambio de fila
       if (el.offsetTop > previousTop + 10) {
         currentRow++;
         previousTop = el.offsetTop;
       }
-
-      // Si pasamos de la fila 4, ocultamos
-      if (currentRow > 5) {
+      // Ocultar si pasa de 4 filas
+      if (currentRow > 4) {
         el.classList.add("hidden-item");
         limitReached = true;
       }
     }
+
     if (!btnContainer) return;
-    // Si ocultamos algo, mostramos el botón. Si todo entra en 4 filas, ocultamos el botón.
+
+    // Control de visibilidad del contenedor
     if (limitReached) {
       btnContainer.style.display = "flex";
+      // Aseguramos que se ve el botón de "Mostrar más" y no la flecha al inicio
+      if (btn) btn.style.display = "block";
+      if (scrollBtn) scrollBtn.style.display = "none";
     } else {
       btnContainer.style.display = "none";
     }
   }
 
-  // Ejecutar al inicio
+  // Inicializar
   window.addEventListener("load", calculateRows);
-  
-  // Ejecutar al redimensionar la pantalla (debounce simple)
-  let resizeTimer: string | number | NodeJS.Timeout | undefined;
+  let resizeTimer: any; // Ajuste de tipo para evitar errores TS simples
   window.addEventListener("resize", () => {
     clearTimeout(resizeTimer);
     resizeTimer = setTimeout(calculateRows, 200);
   });
 
-
-  // Acción del botón
+  // --- LÓGICA CORREGIDA DEL BOTÓN ---
   if (btn && grid && btnContainer) {
     btn.addEventListener("click", () => {
       isExpanded = true;
-      // Mostrar todos los elementos
+      
+      // 1. Mostrar todos los items
       const hiddenItems = grid.querySelectorAll(".hidden-item");
       hiddenItems.forEach(el => el.classList.remove("hidden-item"));
-      // Ocultar el botón
-      btnContainer.style.display = "none";
       
-      // Opcional: Disparar el lazy load observer para las nuevas imágenes visibles
-      // (Tu IntersectionObserver existente ya se encargará cuando hagan scroll)
+      // 2. Ocultar botón "Mostrar más"
+      btn.style.display = "none";
+      
+      // 3. Mostrar flecha (si existe)
+      if (scrollBtn) {
+        scrollBtn.style.display = "block";
+      }
+      
+      // IMPORTANTE: NO ocultamos btnContainer aquí, 
+      // porque ahora contiene la flecha que queremos ver.
+    });
+  }
+
+  // Acción de la Flecha
+  if (scrollBtn) {
+    scrollBtn.addEventListener("click", () => {
+      // 1. Buscamos la sección por su ID
+      const nextSection = document.getElementById("servicios");
+      
+      if (nextSection) {
+        // 2. Si existe, viajamos hasta ella suavemente
+        nextSection.scrollIntoView({ behavior: "smooth" });
+      } else {
+        // Fallback: Si se te olvidó poner el ID, bajamos una pantalla completa
+        window.scrollBy({ top: window.innerHeight, behavior: "smooth" });
+      }
     });
   }
 </script>
@@ -545,4 +563,49 @@ for (const p of allPaths) {
     color: black;
     border-color: white;
   }
+
+
+  /* Estilo de la Flecha */
+  .btn-scroll-next {
+    display: none; /* Oculto por defecto */
+
+    /* POSICIÓN FIJA (La clave para que te siga) */
+    position: fixed;
+    bottom: 30px;           /* Distancia desde abajo */
+    left: 50%;              /* Centrado horizontal */
+    transform: translateX(-50%); /* Ajuste fino del centrado */
+    z-index: 1000;          /* Para que flote por encima de las fotos */
+
+    /* ESTILOS VISUALES */
+    background: transparent;
+    border: none;
+    color: white;
+    cursor: pointer;
+    padding: 10px;
+    transition: color 0.3s ease;
+    animation: bounce 2s infinite; /* Animación de rebote */
+  }
+
+  .btn-scroll-next svg {
+    width: 40px;
+    height: 40px;
+    opacity: 0.8;
+  }
+
+  .btn-scroll-next:hover {
+    color: var(--color-accent, #ff66c4); /* Usa tu color rosado o fallback */
+  }
+  
+  .btn-scroll-next:hover svg {
+    opacity: 1;
+  }
+
+  /* Animación de rebote suave */
+  @keyframes bounce {
+    0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+    40% { transform: translateY(-10px); }
+    60% { transform: translateY(-5px); }
+  }
+
+
 </style>
