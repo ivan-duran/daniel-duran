@@ -1,6 +1,11 @@
 ---
-import BaseLayout from "~/layouts/BaseLayout.astro";
+import HeroCard from "~/components/HeroCard.astro";
 import MediaGrid from "~/components/MediaGrid.astro";
+import BaseLayout from "~/layouts/BaseLayout.astro";
+import heroDesign from "~/images/hero-images/hero-diseno.jpg";
+import heroAudiovisual from "~/images/hero-images/hero-audiovisual.jpg";  
+import heroContenido from "~/images/hero-images/hero-contenido.jpg";
+
 ---
 
 <BaseLayout
@@ -8,4 +13,21 @@ import MediaGrid from "~/components/MediaGrid.astro";
   description="Fotos y Videos capturados por Daniel Durán"
 >
   <MediaGrid />
+  <div style="padding: var(--padding); padding-bottom: 0;">
+    <HeroCard
+      title="Diseño Grafico"
+      eyebrow="algun otro texto"
+      image={heroDesign}
+    />
+    <HeroCard
+      title="Creación de Contenido"
+      eyebrow=""
+      image={heroContenido}
+    />
+    <HeroCard
+      title="Producción Audiovisual"
+      eyebrow="algun otro texto"
+      image={heroAudiovisual}
+    />
+  </div>
 </BaseLayout>

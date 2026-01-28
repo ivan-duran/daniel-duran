@@ -52,7 +52,12 @@ function getMetaForMedia(mediaPath: string) {
 
 const clean = (s: string) => (s ?? "").trim();
 const escapeHtml = (s: string) =>
-  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+  s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
 
 function buildCaption(meta: MetaFM) {
   const desc = clean(meta.description ?? "");
@@ -63,9 +68,13 @@ function buildCaption(meta: MetaFM) {
 
   if (!title && !location && !date && tags.length === 0) return "";
 
-  const titleHtml = title ? `<h3 class="cap-title">${escapeHtml(title)}</h3>` : "";
+  const titleHtml = title
+    ? `<h3 class="cap-title">${escapeHtml(title)}</h3>`
+    : "";
   const metaParts = [location, date].filter(Boolean);
-  const metaLine = metaParts.length ? `<div class="cap-meta">${escapeHtml(metaParts.join(" • "))}</div>` : "";
+  const metaLine = metaParts.length
+    ? `<div class="cap-meta">${escapeHtml(metaParts.join(" • "))}</div>`
+    : "";
   const descHtml = desc ? `<p class="cap-desc">${escapeHtml(desc)}</p>` : "";
   const tagsHtml = tags.length
     ? `<ul class="cap-tags">${tags.map((t) => `<li class="cap-tag">${escapeHtml(t)}</li>`).join("")}</ul>`
@@ -77,8 +86,12 @@ function buildCaption(meta: MetaFM) {
 /* PROCESAMIENTO ITEMS                            */
 /* -------------------------------------------------------------------------- */
 
-const sortedPhotoEntries = Object.entries(photos).sort(([a], [b]) => a.localeCompare(b));
-const sortedVideoEntries = Object.entries(videos).sort(([a], [b]) => a.localeCompare(b));
+const sortedPhotoEntries = Object.entries(photos).sort(([a], [b]) =>
+  a.localeCompare(b),
+);
+const sortedVideoEntries = Object.entries(videos).sort(([a], [b]) =>
+  a.localeCompare(b),
+);
 
 const videoBaseNames = new Set(
   sortedVideoEntries.map(([p]) => stripExt(fileName(p)).toLowerCase()),
@@ -87,8 +100,14 @@ const videoBaseNames = new Set(
 function findPosterPath(videoPath: string) {
   const basePath = videoPath.replace(/\.[^.]+$/, "");
   const candidates = [
-    `${basePath}.jpg`, `${basePath}.jpeg`, `${basePath}.png`, `${basePath}.webp`,
-    `${basePath}.JPG`, `${basePath}.JPEG`, `${basePath}.PNG`, `${basePath}.WEBP`,
+    `${basePath}.jpg`,
+    `${basePath}.jpeg`,
+    `${basePath}.png`,
+    `${basePath}.webp`,
+    `${basePath}.JPG`,
+    `${basePath}.JPEG`,
+    `${basePath}.PNG`,
+    `${basePath}.WEBP`,
   ];
   for (const c of candidates) {
     if (c in photos) return c;
@@ -102,7 +121,9 @@ type Item =
 
 const photoMap = new Map(sortedPhotoEntries);
 const videoMap = new Map(sortedVideoEntries);
-const allPaths = [...photoMap.keys(), ...videoMap.keys()].sort((a, b) => a.localeCompare(b));
+const allPaths = [...photoMap.keys(), ...videoMap.keys()].sort((a, b) =>
+  a.localeCompare(b),
+);
 
 const items: Item[] = [];
 for (const p of allPaths) {
@@ -201,6 +222,12 @@ for (const p of allPaths) {
     })
   }
 </section>
+
+<div class="load-more-container" id="loadMoreContainer">
+  <button id="btnShowMore" class="btn-show-more">
+    Mostrar más
+  </button>
+</div>
 
 <script>
   import { Fancybox, Panzoom } from "@fancyapps/ui";
@@ -312,6 +339,77 @@ for (const p of allPaths) {
     { threshold: 0.35 }
   );
   videos.forEach((v) => io.observe(v));
+
+  const grid = document.getElementById("photoswipe");
+  const btnContainer = document.getElementById("loadMoreContainer");
+  const btn = document.getElementById("btnShowMore");
+  let isExpanded = false;
+
+  function calculateRows() {
+    // Si ya le dimos a "mostrar más", no ocultamos nada
+    if (isExpanded) return;
+
+    if (!grid) return;
+
+    const items = Array.from(grid.children) as HTMLElement[];
+    if (items.length === 0) return;
+
+    // Reseteamos visibilidad para calcular bien las posiciones
+    items.forEach(el => el.classList.remove("hidden-item"));
+    
+    let currentRow = 1;
+    let previousTop = items[0].offsetTop;
+    let limitReached = false;
+
+    for (let i = 0; i < items.length; i++) {
+      const el = items[i];
+      
+      // Si el elemento actual está más abajo que el anterior (con un margen de error de 5px), es nueva fila
+      if (el.offsetTop > previousTop + 10) {
+        currentRow++;
+        previousTop = el.offsetTop;
+      }
+
+      // Si pasamos de la fila 4, ocultamos
+      if (currentRow > 5) {
+        el.classList.add("hidden-item");
+        limitReached = true;
+      }
+    }
+    if (!btnContainer) return;
+    // Si ocultamos algo, mostramos el botón. Si todo entra en 4 filas, ocultamos el botón.
+    if (limitReached) {
+      btnContainer.style.display = "flex";
+    } else {
+      btnContainer.style.display = "none";
+    }
+  }
+
+  // Ejecutar al inicio
+  window.addEventListener("load", calculateRows);
+  
+  // Ejecutar al redimensionar la pantalla (debounce simple)
+  let resizeTimer: string | number | NodeJS.Timeout | undefined;
+  window.addEventListener("resize", () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(calculateRows, 200);
+  });
+
+
+  // Acción del botón
+  if (btn && grid && btnContainer) {
+    btn.addEventListener("click", () => {
+      isExpanded = true;
+      // Mostrar todos los elementos
+      const hiddenItems = grid.querySelectorAll(".hidden-item");
+      hiddenItems.forEach(el => el.classList.remove("hidden-item"));
+      // Ocultar el botón
+      btnContainer.style.display = "none";
+      
+      // Opcional: Disparar el lazy load observer para las nuevas imágenes visibles
+      // (Tu IntersectionObserver existente ya se encargará cuando hagan scroll)
+    });
+  }
 </script>
 
 <style is:global>
@@ -414,5 +512,37 @@ for (const p of allPaths) {
 
   .fancybox__container img.f-panzoom__content {
     pointer-events: none !important;
+  }
+
+  /* Clase para ocultar elementos excedentes */
+  .hidden-item {
+    display: none !important;
+  }
+
+  /* Estilos del botón */
+  .load-more-container {
+    display: none; /* Se oculta por defecto hasta que JS calcule si es necesario */
+    justify-content: center;
+    padding: 40px 0;
+    width: 100%;
+  }
+
+  .btn-show-more {
+    background-color: transparent;
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 10px 24px;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .btn-show-more:hover {
+    background-color: white;
+    color: black;
+    border-color: white;
   }
 </style>
