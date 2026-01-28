@@ -32,9 +32,21 @@ const socials = [
 <style>
   .main-header {
     width: 100%;
-    /* Padding responsive: usa variables si existen, sino fallback */
-    padding: 2rem var(--padding, 20px) 1.5rem; 
-    background-color: var(--bg-dark);
+    /* Tu padding original */
+    padding: 1.5rem var(--padding, 20px) 0rem; 
+    
+    /* Asegúrate de que el fondo sea sólido para que no se vea el texto mezclado al pasar por debajo */
+    background-color: var(--bg-dark); 
+    
+    /* --- CÓDIGO NUEVO PARA FIJARLO --- */
+    position: sticky;  /* Comportamiento "pegajoso" */
+    top: 0;            /* Se pega al tocar el borde superior */
+    z-index: 1000;     /* Asegura que quede por encima de las fotos y videos */
+    
+    /* Opcional: Un toque elegante (Blur) */
+    /* Si tu variable --bg-dark tiene algo de transparencia, esto desenfoca lo que pasa por detrás */
+    backdrop-filter: blur(10px); 
+    -webkit-backdrop-filter: blur(10px); /* Para Safari */
   }
 
   .header-inner {
@@ -43,7 +55,7 @@ const socials = [
     align-items: center; /* Centrado vertical del bloque completo */
     flex-wrap: wrap;
     gap: 1.5rem;
-    padding-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
     border-bottom: 1px solid rgba(255, 255, 255, 0.15);
   }
 
@@ -60,7 +72,7 @@ const socials = [
     font-size: 1.8rem;      /* Tamaño grande para el nombre */
     font-weight: 800;
     text-decoration: none;
-    color: #ffffff;
+    color: var(--color-text);
     text-transform: uppercase;
     letter-spacing: -0.02em;
     transition: color 0.2s ease;
@@ -102,17 +114,50 @@ const socials = [
     opacity: 1;
   }
 
-  /* --- Responsive (Móvil) --- */
+/* --- Responsive (Móvil) --- */
   @media (max-width: 600px) {
+    .main-header {
+      /* Padding compacto: arriba/abajo reducidos */
+      padding: 0.8rem var(--padding, 20px) 0rem; 
+    }
+
     .header-inner {
-      flex-direction: column; /* En móvil, todo en columna */
-      align-items: center;
-      text-align: center;
-      gap: 1rem;
+      /* Mantenemos 'row' para que queden lado a lado */
+      flex-direction: row; 
+      justify-content: space-between; /* Uno a cada extremo */
+      align-items: center; /* Centrados verticalmente */
+      gap: 1rem; /* Espacio mínimo entre nombre y botones */
+      padding-bottom: 0.8rem;
     }
     
     .brand {
-      align-items: center; /* Centra el nombre y rol en móvil */
+      /* Alineamos nombre y rol a la izquierda */
+      align-items: flex-start; 
+      text-align: left;
+      /* Evita que el nombre se rompa feo si falta espacio */
+      max-width: 60%; 
+    }
+
+    .logo {
+      font-size: 1.1rem; /* Tamaño ajustado para que quepa en una línea o dos */
+      line-height: 1.1;
+    }
+    
+    .role {
+      font-size: 0.65rem;
+      margin-top: 2px;
+    }
+
+    /* Redes a la derecha */
+    .social-nav {
+      gap: 0.5rem; /* Botones más pegaditos entre sí */
+      flex-wrap: nowrap; /* Forzamos que no bajen de línea */
+    }
+
+    .social-nav a {
+      font-size: 0.6rem; /* Texto compacto */
+      padding: 4px 8px;  /* Botones más pequeños */
+
     }
   }
 </style>

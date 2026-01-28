@@ -5,8 +5,8 @@ import { Image } from "astro:assets";
 interface Props {
   title: string;
   image: ImageMetadata; // Recibe la imagen importada
-  eyebrow?: string;     // El texto pequeño arriba 
-  link?: string;        // A dónde lleva el botón
+  eyebrow?: string; // El texto pequeño arriba
+  link?: string; // A dónde lleva el botón
 }
 
 const { title, image, eyebrow, link = "#" } = Astro.props;
