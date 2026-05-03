@@ -2,7 +2,7 @@
 import HeroCard from "~/components/HeroCard.astro";
 import MediaGrid from "~/components/MediaGrid.astro";
 import heroAudiovisual from "~/images/hero-images/hero-audiovisual.jpg";
-import heroContenido from "~/images/hero-images/hero-contenido.jpg";
+import heroContenido from "~/images/hero-images/hero-contenido.mp4";
 import heroDesign from "~/images/hero-images/hero-diseno.jpg";
 import BaseLayout from "~/layouts/BaseLayout.astro";
 ---
@@ -14,19 +14,19 @@ import BaseLayout from "~/layouts/BaseLayout.astro";
   <MediaGrid />
   <div id="servicios" style="padding: var(--padding); padding-bottom: 0;">
     <HeroCard
-      title="Diseño Grafico"
-      eyebrow="algun otro texto"
-      image={heroDesign}
-    />
-    <HeroCard
       title="Creación de Contenido"
       eyebrow=""
-      image={heroContenido}
+      video={heroContenido}
     />
     <HeroCard
       title="Producción Audiovisual"
-      eyebrow="algun otro texto"
+      eyebrow=""
       image={heroAudiovisual}
+    />
+    <HeroCard
+      title="Diseño Grafico"
+      eyebrow=""
+      image={heroDesign}
     />
   </div>
 </BaseLayout>

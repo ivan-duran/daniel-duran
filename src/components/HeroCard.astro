@@ -4,22 +4,34 @@ import { Image } from "astro:assets";
 
 interface Props {
   title: string;
-  image: ImageMetadata; // Recibe la imagen importada
+  image?: ImageMetadata; // Recibe la imagen importada
+  video?: string; // video (opcional)
   eyebrow?: string; // El texto pequeño arriba
   link?: string; // A dónde lleva el botón
 }
 
-const { title, image, eyebrow, link = "#" } = Astro.props;
+const { title, image, video, eyebrow, link = "#" } = Astro.props;
 ---
 
 <div class="hero-card">
-  <Image 
-    src={image} 
-    alt={title} 
-    class="hero-bg" 
-    width={1920} 
-    quality={90}
-  />
+  {video ? (
+    <video 
+      src={video}
+      class="hero-bg"
+      autoplay
+      muted
+      playsinline
+      loop
+    />
+  ) : image ? (
+    <Image 
+      src={image} 
+      alt={title} 
+      class="hero-bg" 
+      width={1920} 
+      quality={90}
+    />
+  ) : null}
 
   <div class="overlay"></div>
 
@@ -95,7 +107,7 @@ const { title, image, eyebrow, link = "#" } = Astro.props;
     font-weight: 800;
     line-height: 1.1;
     text-transform: uppercase;
-    color: #FDE047; /* Un amarillo similar al de tu referencia */
+    color: #FDE047;
     margin: 0;
   }
 
