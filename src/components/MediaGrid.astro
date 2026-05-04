@@ -405,7 +405,7 @@ for (const p of allPaths) {
       
       // 3. Mostrar flecha (si existe)
       if (scrollBtn) {
-        scrollBtn.style.display = "block";
+        scrollBtn.style.display = "flex";
       }
       
       // IMPORTANTE: NO ocultamos btnContainer aquí, 
@@ -565,31 +565,57 @@ for (const p of allPaths) {
   }
 
 
-  /* Estilo de la Flecha */
-  .btn-scroll-next {
-    display: none; /* Oculto por defecto */
 
-    /* POSICIÓN FIJA (La clave para que te siga) */
+/* Estilo de la Flecha */
+  .btn-scroll-next {
+    display: none; /* Oculto por defecto, JS lo pasa a flex */
+
+    /* POSICIÓN FIJA Y CENTRADO PERFECTO */
     position: fixed;
-    bottom: 30px;           /* Distancia desde abajo */
-    left: 50%;              /* Centrado horizontal */
-    transform: translateX(-50%); /* Ajuste fino del centrado */
-    z-index: 1000;          /* Para que flote por encima de las fotos */
+    bottom: 30px;           
+    left: 0;                /* Se estira a la izquierda */
+    right: 0;               /* Se estira a la derecha */
+    margin: 0 auto;         /* El navegador lo centra milimétricamente */
+    
+    /* TAMAÑO EXACTO DE LA CAJA */
+    width: 60px;            
+    height: 60px;           
+    z-index: 1000;          
+
+    /* ALINEACIÓN INTERNA DEL ICONO */
+    justify-content: center;
+    align-items: center;
+    padding: 0;             /* Quitamos padding para evitar asimetrías */
 
     /* ESTILOS VISUALES */
     background: transparent;
     border: none;
     color: white;
     cursor: pointer;
-    padding: 10px;
     transition: color 0.3s ease;
-    animation: bounce 2s infinite; /* Animación de rebote */
+    animation: bounce 2s infinite; 
   }
 
   .btn-scroll-next svg {
     width: 40px;
     height: 40px;
     opacity: 0.8;
+    display: block; /* Evita que el navegador le agregue márgenes fantasma de texto */
+  }
+
+  .btn-scroll-next:hover {
+    color: var(--color-accent, #ff66c4);
+  }
+  
+  .btn-scroll-next:hover svg {
+    opacity: 1;
+  }
+
+  /* Animación de rebote suave */
+  @keyframes bounce {
+    0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+    40% { transform: translateY(-10px); }
+    60% { transform: translateY(-5px); }
   }
 
   .btn-scroll-next:hover {
