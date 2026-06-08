@@ -349,6 +349,8 @@ for (const p of allPaths) {
   const btnContainer = document.getElementById("loadMoreContainer");
   const btn = document.getElementById("btnShowMore");
   const scrollBtn = document.getElementById("btnScrollNext");
+  const bitacoraSection = document.getElementById("bitacora");
+  const nextSection = document.getElementById("servicios");
   let isExpanded = false;
   let resizeTimer: ReturnType<typeof setTimeout> | undefined;
 
@@ -366,6 +368,31 @@ for (const p of allPaths) {
     }
 
     btnContainer.style.display = "none";
+  }
+
+  function updateScrollButtonVisibility() {
+    if (!scrollBtn) return;
+
+    if (!isExpanded) {
+      scrollBtn.style.display = "none";
+      scrollBtn.classList.remove("is-fixed", "is-docked");
+      return;
+    }
+
+    const bitacoraTop = bitacoraSection?.offsetTop ?? grid?.offsetTop ?? 0;
+    const nextTop = nextSection?.offsetTop ?? document.documentElement.scrollHeight;
+    const viewportTop = window.scrollY;
+    const viewportBottom = viewportTop + window.innerHeight;
+
+    if (viewportTop < bitacoraTop || viewportTop >= nextTop) {
+      scrollBtn.style.display = "none";
+      scrollBtn.classList.remove("is-fixed", "is-docked");
+      return;
+    }
+
+    scrollBtn.style.display = "flex";
+    scrollBtn.classList.toggle("is-fixed", viewportBottom < nextTop);
+    scrollBtn.classList.toggle("is-docked", viewportBottom >= nextTop);
   }
 
   function applyMobileLimit(items: HTMLElement[]) {
@@ -446,24 +473,31 @@ for (const p of allPaths) {
       
       btn.style.display = "none";
       
-      if (scrollBtn) {
-        scrollBtn.style.display = "flex";
-      }
+      updateScrollButtonVisibility();
     });
   }
 
   if (scrollBtn) {
     scrollBtn.addEventListener("click", () => {
-      const nextSection = document.getElementById("servicios");
       const behavior = reducedMotion.matches ? "auto" : "smooth";
 
       if (nextSection) {
-        nextSection.scrollIntoView({ behavior });
+        if (mobileViewport.matches) {
+          const header = document.querySelector(".main-header") as HTMLElement | null;
+          const headerHeight = header?.offsetHeight ?? 0;
+          const top = nextSection.offsetTop - headerHeight - 8;
+          window.scrollTo({ top: Math.max(0, top), behavior });
+        } else {
+          nextSection.scrollIntoView({ behavior });
+        }
       } else {
         window.scrollBy({ top: window.innerHeight, behavior });
       }
     });
   }
+
+  window.addEventListener("scroll", updateScrollButtonVisibility, { passive: true });
+  window.addEventListener("resize", updateScrollButtonVisibility);
 </script>
 
 <script is:inline>
@@ -472,6 +506,8 @@ for (const p of allPaths) {
     const btnContainer = document.getElementById("loadMoreContainer");
     const btn = document.getElementById("btnShowMore");
     const scrollBtn = document.getElementById("btnScrollNext");
+    const bitacoraSection = document.getElementById("bitacora");
+    const nextSection = document.getElementById("servicios");
     const mobileViewport = window.matchMedia("(max-width: 620px)");
     const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
     const mobileInitialItems = 10;
@@ -490,6 +526,31 @@ for (const p of allPaths) {
       }
 
       btnContainer.style.display = "none";
+    }
+
+    function updateScrollButtonVisibility() {
+      if (!scrollBtn) return;
+
+      if (!isExpanded) {
+        scrollBtn.style.display = "none";
+        scrollBtn.classList.remove("is-fixed", "is-docked");
+        return;
+      }
+
+      const bitacoraTop = bitacoraSection?.offsetTop ?? grid?.offsetTop ?? 0;
+      const nextTop = nextSection?.offsetTop ?? document.documentElement.scrollHeight;
+      const viewportTop = window.scrollY;
+      const viewportBottom = viewportTop + window.innerHeight;
+
+      if (viewportTop < bitacoraTop || viewportTop >= nextTop) {
+        scrollBtn.style.display = "none";
+        scrollBtn.classList.remove("is-fixed", "is-docked");
+        return;
+      }
+
+      scrollBtn.style.display = "flex";
+      scrollBtn.classList.toggle("is-fixed", viewportBottom < nextTop);
+      scrollBtn.classList.toggle("is-docked", viewportBottom >= nextTop);
     }
 
     function applyMobileLimit(items) {
@@ -554,16 +615,22 @@ for (const p of allPaths) {
         .forEach((el) => el.classList.remove("hidden-item"));
 
       if (btn) btn.style.display = "none";
-      if (scrollBtn) scrollBtn.style.display = "flex";
+      updateScrollButtonVisibility();
     }
 
     btn?.addEventListener("click", revealAll);
     scrollBtn?.addEventListener("click", () => {
-      const nextSection = document.getElementById("servicios");
       const behavior = reducedMotion.matches ? "auto" : "smooth";
 
       if (nextSection) {
-        nextSection.scrollIntoView({ behavior });
+        if (mobileViewport.matches) {
+          const header = document.querySelector(".main-header");
+          const headerHeight = header?.offsetHeight ?? 0;
+          const top = nextSection.offsetTop - headerHeight - 8;
+          window.scrollTo({ top: Math.max(0, top), behavior });
+        } else {
+          nextSection.scrollIntoView({ behavior });
+        }
         return;
       }
 
@@ -597,6 +664,8 @@ for (const p of allPaths) {
     scheduleCalculate();
     window.addEventListener("load", scheduleCalculate, { once: true });
     window.addEventListener("resize", scheduleCalculate);
+    window.addEventListener("scroll", updateScrollButtonVisibility, { passive: true });
+    window.addEventListener("resize", updateScrollButtonVisibility);
     mobileViewport.addEventListener?.("change", scheduleCalculate);
     document.fonts?.ready.then(scheduleCalculate);
     grid.querySelectorAll("img").forEach((img) => {
@@ -796,7 +865,9 @@ for (const p of allPaths) {
   /* Estilos del botón */
   .load-more-container {
     display: none;
+    position: relative;
     justify-content: center;
+    min-height: 5.25rem;
     padding: clamp(1.5rem, 4vw, 3rem) 0 clamp(2rem, 6vw, 5rem);
     width: 100%;
   }
@@ -826,14 +897,12 @@ for (const p of allPaths) {
 
   .btn-scroll-next {
     display: none;
-    position: fixed;
-    bottom: 1.5rem;
     left: 0;
     right: 0;
     margin: 0 auto;
     width: 3.75rem;
     height: 3.75rem;
-    z-index: 1000;
+    z-index: 900;
     justify-content: center;
     align-items: center;
     padding: 0;
@@ -848,6 +917,16 @@ for (const p of allPaths) {
     animation: bounce 2s infinite;
     backdrop-filter: blur(14px);
     -webkit-backdrop-filter: blur(14px);
+  }
+
+  .btn-scroll-next.is-fixed {
+    position: fixed;
+    bottom: 1.5rem;
+  }
+
+  .btn-scroll-next.is-docked {
+    position: absolute;
+    bottom: clamp(2rem, 6vw, 5rem);
   }
 
   .btn-scroll-next svg {
@@ -868,6 +947,7 @@ for (const p of allPaths) {
 
   @media (max-width: 620px) {
     .load-more-container {
+      min-height: 4.6rem;
       padding: 1.25rem var(--page-padding) clamp(2.5rem, 9vw, 3.5rem);
     }
 
@@ -879,9 +959,16 @@ for (const p of allPaths) {
     }
 
     .btn-scroll-next {
-      bottom: max(1rem, env(safe-area-inset-bottom));
       width: 3.35rem;
       height: 3.35rem;
+    }
+
+    .btn-scroll-next.is-fixed {
+      bottom: max(1rem, env(safe-area-inset-bottom));
+    }
+
+    .btn-scroll-next.is-docked {
+      bottom: clamp(2.5rem, 9vw, 3.5rem);
     }
 
     .btn-scroll-next svg {
