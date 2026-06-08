@@ -244,6 +244,8 @@ for (const p of allPaths) {
   /* FANCYBOX SETUP                                                           */
   /* -------------------------------------------------------------------------- */
   let resizeObserver: ResizeObserver | null = null;
+  const mobileViewport = window.matchMedia("(max-width: 620px)");
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
 
   function syncCaptionWidth(fancybox: any) {
     const slide = fancybox?.getSlide();
@@ -251,6 +253,14 @@ for (const p of allPaths) {
     if (!slideEl) return;
     const cap = slideEl.querySelector(".f-caption");
     if (!cap) return;
+
+    if (mobileViewport.matches) {
+      cap.style.width = "min(100%, calc(100vw - 24px))";
+      cap.style.maxWidth = "calc(100vw - 24px)";
+      cap.style.margin = "0 auto";
+      return;
+    }
+
     const target =
       slideEl.querySelector(".f-panzoom__viewport") ||
       slideEl.querySelector(".f-html") ||
@@ -300,7 +310,7 @@ for (const p of allPaths) {
         Toolbar: {
           display: { right: ["close"] },
         },
-        transition: "slide",
+        transition: reducedMotion.matches ? false : "slide",
       },
     } as any); 
   }
@@ -340,91 +350,261 @@ for (const p of allPaths) {
   const btn = document.getElementById("btnShowMore");
   const scrollBtn = document.getElementById("btnScrollNext");
   let isExpanded = false;
+  let resizeTimer: ReturnType<typeof setTimeout> | undefined;
+
+  const MOBILE_INITIAL_ITEMS = 10;
+  const DESKTOP_ROW_LIMIT = 4;
+
+  function setControls(limitReached: boolean) {
+    if (!btnContainer) return;
+
+    if (limitReached) {
+      btnContainer.style.display = "flex";
+      if (btn) btn.style.display = "inline-flex";
+      if (scrollBtn) scrollBtn.style.display = "none";
+      return;
+    }
+
+    btnContainer.style.display = "none";
+  }
+
+  function applyMobileLimit(items: HTMLElement[]) {
+    let limitReached = false;
+
+    items.forEach((el, index) => {
+      if (index >= MOBILE_INITIAL_ITEMS) {
+        el.classList.add("hidden-item");
+        limitReached = true;
+      }
+    });
+
+    return limitReached;
+  }
+
+  function applyRowLimit(items: HTMLElement[]) {
+    let currentRow = 1;
+    let previousTop = items[0]?.offsetTop ?? 0;
+    let limitReached = false;
+
+    for (const el of items) {
+      if (el.offsetTop > previousTop + 10) {
+        currentRow++;
+        previousTop = el.offsetTop;
+      }
+
+      if (currentRow > DESKTOP_ROW_LIMIT) {
+        el.classList.add("hidden-item");
+        limitReached = true;
+      }
+    }
+
+    return limitReached;
+  }
 
   function calculateRows() {
-    // Si ya expandimos, no hacemos nada
     if (isExpanded) return;
     if (!grid) return;
 
     const items = Array.from(grid.children) as HTMLElement[];
     if (items.length === 0) return;
 
-    // Reseteamos visibilidad para calcular bien
     items.forEach(el => el.classList.remove("hidden-item"));
-    
-    let currentRow = 1;
-    let previousTop = items[0].offsetTop;
-    let limitReached = false;
 
-    for (let i = 0; i < items.length; i++) {
-      const el = items[i];
-      // Detectar cambio de fila
-      if (el.offsetTop > previousTop + 10) {
-        currentRow++;
-        previousTop = el.offsetTop;
-      }
-      // Ocultar si pasa de 4 filas
-      if (currentRow > 4) {
-        el.classList.add("hidden-item");
-        limitReached = true;
-      }
-    }
+    const limitReached = mobileViewport.matches
+      ? applyMobileLimit(items)
+      : applyRowLimit(items);
 
-    if (!btnContainer) return;
-
-    // Control de visibilidad del contenedor
-    if (limitReached) {
-      btnContainer.style.display = "flex";
-      // Aseguramos que se ve el botón de "Mostrar más" y no la flecha al inicio
-      if (btn) btn.style.display = "block";
-      if (scrollBtn) scrollBtn.style.display = "none";
-    } else {
-      btnContainer.style.display = "none";
-    }
+    setControls(limitReached);
   }
 
-  // Inicializar
-  window.addEventListener("load", calculateRows);
-  let resizeTimer: any; // Ajuste de tipo para evitar errores TS simples
-  window.addEventListener("resize", () => {
+  function scheduleCalculate() {
     clearTimeout(resizeTimer);
-    resizeTimer = setTimeout(calculateRows, 200);
-  });
+    resizeTimer = setTimeout(() => {
+      requestAnimationFrame(() => requestAnimationFrame(calculateRows));
+    }, 90);
+  }
 
-  // --- LÓGICA CORREGIDA DEL BOTÓN ---
+  scheduleCalculate();
+  window.addEventListener("load", scheduleCalculate, { once: true });
+  window.addEventListener("resize", scheduleCalculate);
+  mobileViewport.addEventListener("change", scheduleCalculate);
+  document.fonts?.ready.then(scheduleCalculate);
+  grid
+    ?.querySelectorAll("img")
+    .forEach((img) => {
+      if (img.complete) return;
+      img.addEventListener("load", scheduleCalculate, { once: true });
+      img.addEventListener("error", scheduleCalculate, { once: true });
+    });
+
   if (btn && grid && btnContainer) {
     btn.addEventListener("click", () => {
       isExpanded = true;
       
-      // 1. Mostrar todos los items
       const hiddenItems = grid.querySelectorAll(".hidden-item");
       hiddenItems.forEach(el => el.classList.remove("hidden-item"));
       
-      // 2. Ocultar botón "Mostrar más"
       btn.style.display = "none";
       
-      // 3. Mostrar flecha (si existe)
       if (scrollBtn) {
         scrollBtn.style.display = "flex";
       }
-      
-      // IMPORTANTE: NO ocultamos btnContainer aquí, 
-      // porque ahora contiene la flecha que queremos ver.
     });
   }
 
-  // Acción de la Flecha
   if (scrollBtn) {
     scrollBtn.addEventListener("click", () => {
       const nextSection = document.getElementById("servicios");
+      const behavior = reducedMotion.matches ? "auto" : "smooth";
 
       if (nextSection) {
-        nextSection.scrollIntoView({ behavior: "smooth" });
+        nextSection.scrollIntoView({ behavior });
       } else {
-        window.scrollBy({ top: window.innerHeight, behavior: "smooth" });
+        window.scrollBy({ top: window.innerHeight, behavior });
       }
     });
   }
+</script>
+
+<script is:inline>
+  (() => {
+    const grid = document.getElementById("photoswipe");
+    const btnContainer = document.getElementById("loadMoreContainer");
+    const btn = document.getElementById("btnShowMore");
+    const scrollBtn = document.getElementById("btnScrollNext");
+    const mobileViewport = window.matchMedia("(max-width: 620px)");
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const mobileInitialItems = 10;
+    const desktopRowLimit = 4;
+    let isExpanded = false;
+    let resizeTimer;
+
+    if (!grid || !btnContainer) return;
+
+    function setControls(limitReached) {
+      if (limitReached) {
+        btnContainer.style.display = "flex";
+        if (btn) btn.style.display = "inline-flex";
+        if (scrollBtn) scrollBtn.style.display = "none";
+        return;
+      }
+
+      btnContainer.style.display = "none";
+    }
+
+    function applyMobileLimit(items) {
+      let limitReached = false;
+
+      items.forEach((el, index) => {
+        if (index >= mobileInitialItems) {
+          el.classList.add("hidden-item");
+          limitReached = true;
+        }
+      });
+
+      return limitReached;
+    }
+
+    function applyRowLimit(items) {
+      let currentRow = 1;
+      let previousTop = items[0]?.offsetTop ?? 0;
+      let limitReached = false;
+
+      for (const el of items) {
+        if (el.offsetTop > previousTop + 10) {
+          currentRow++;
+          previousTop = el.offsetTop;
+        }
+
+        if (currentRow > desktopRowLimit) {
+          el.classList.add("hidden-item");
+          limitReached = true;
+        }
+      }
+
+      return limitReached;
+    }
+
+    function calculateRows() {
+      if (isExpanded) return;
+
+      const items = Array.from(grid.children);
+      if (items.length === 0) return;
+
+      items.forEach((el) => el.classList.remove("hidden-item"));
+
+      const limitReached = mobileViewport.matches
+        ? applyMobileLimit(items)
+        : applyRowLimit(items);
+
+      setControls(limitReached);
+    }
+
+    function scheduleCalculate() {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => {
+        requestAnimationFrame(() => requestAnimationFrame(calculateRows));
+      }, 90);
+    }
+
+    function revealAll() {
+      isExpanded = true;
+      grid
+        .querySelectorAll(".hidden-item")
+        .forEach((el) => el.classList.remove("hidden-item"));
+
+      if (btn) btn.style.display = "none";
+      if (scrollBtn) scrollBtn.style.display = "flex";
+    }
+
+    btn?.addEventListener("click", revealAll);
+    scrollBtn?.addEventListener("click", () => {
+      const nextSection = document.getElementById("servicios");
+      const behavior = reducedMotion.matches ? "auto" : "smooth";
+
+      if (nextSection) {
+        nextSection.scrollIntoView({ behavior });
+        return;
+      }
+
+      window.scrollBy({ top: window.innerHeight, behavior });
+    });
+
+    if ("IntersectionObserver" in window) {
+      const videoObserver = new IntersectionObserver(
+        (entries) => {
+          for (const entry of entries) {
+            const video = entry.target;
+
+            if (entry.isIntersecting) {
+              if (!video.src && video.dataset.src) video.src = video.dataset.src;
+              video.muted = true;
+              video.play().catch(() => {});
+              continue;
+            }
+
+            video.pause();
+          }
+        },
+        { threshold: 0.35 },
+      );
+
+      grid
+        .querySelectorAll("video.tile-video[data-src]")
+        .forEach((video) => videoObserver.observe(video));
+    }
+
+    scheduleCalculate();
+    window.addEventListener("load", scheduleCalculate, { once: true });
+    window.addEventListener("resize", scheduleCalculate);
+    mobileViewport.addEventListener?.("change", scheduleCalculate);
+    document.fonts?.ready.then(scheduleCalculate);
+    grid.querySelectorAll("img").forEach((img) => {
+      if (img.complete) return;
+      img.addEventListener("load", scheduleCalculate, { once: true });
+      img.addEventListener("error", scheduleCalculate, { once: true });
+    });
+  })();
 </script>
 
 <style is:global>
@@ -487,6 +667,36 @@ for (const p of allPaths) {
     }
   }
 
+  @media (max-width: 620px) {
+    .justified-gallery {
+      --space: clamp(0.45rem, 2.1vw, 0.65rem);
+
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      align-items: stretch;
+
+      a.media {
+        width: 100%;
+        min-width: 0;
+        aspect-ratio: 1 / 1.16;
+        flex: none;
+        opacity: 0.96;
+        transform: none;
+      }
+
+      a.media:hover {
+        transform: none;
+      }
+
+      a.media:nth-child(1),
+      a.media:nth-child(4),
+      a.media:nth-child(7) {
+        grid-column: 1 / -1;
+        aspect-ratio: 4 / 3;
+      }
+    }
+  }
+
   /* Fancybox Overrides */
   .fancybox__container {
     --f-caption-padding: 0 4px;
@@ -535,6 +745,47 @@ for (const p of allPaths) {
 
   .fancybox__container img.f-panzoom__content {
     pointer-events: none !important;
+  }
+
+  @media (max-width: 620px) {
+    .fancybox__container {
+      --f-button-width: 42px;
+      --f-button-height: 42px;
+      --f-toolbar-padding: 10px;
+      --media-radius: 12px;
+    }
+
+    .fancybox__slide {
+      padding-inline: 0.75rem;
+    }
+
+    .f-caption {
+      padding-inline: 0;
+    }
+
+    .f-caption .cap {
+      max-height: 32svh;
+      overflow: auto;
+      padding-bottom: 0.35rem;
+    }
+
+    .cap-title {
+      font-size: clamp(1.12rem, 5vw, 1.55rem);
+    }
+
+    .cap-meta,
+    .cap-desc {
+      font-size: 0.88rem;
+    }
+
+    .cap-tags {
+      gap: 0.45rem;
+    }
+
+    .cap-tag {
+      padding: 0.38rem 0.58rem;
+      font-size: 0.66rem;
+    }
   }
 
   /* Clase para ocultar elementos excedentes */
@@ -613,6 +864,42 @@ for (const p of allPaths) {
 
   .btn-scroll-next:hover svg {
     opacity: 1;
+  }
+
+  @media (max-width: 620px) {
+    .load-more-container {
+      padding: 1.25rem var(--page-padding) clamp(2.5rem, 9vw, 3.5rem);
+    }
+
+    .btn-show-more {
+      width: 100%;
+      max-width: 22rem;
+      min-height: 3rem;
+      justify-content: center;
+    }
+
+    .btn-scroll-next {
+      bottom: max(1rem, env(safe-area-inset-bottom));
+      width: 3.35rem;
+      height: 3.35rem;
+    }
+
+    .btn-scroll-next svg {
+      width: 1.75rem;
+      height: 1.75rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .justified-gallery a.media,
+    .btn-show-more,
+    .btn-scroll-next {
+      transition: none;
+    }
+
+    .btn-scroll-next {
+      animation: none;
+    }
   }
 
   @keyframes bounce {
