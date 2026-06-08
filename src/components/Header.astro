@@ -2,6 +2,12 @@
 const siteName = "Daniel Durán Vilches";
 const role = "Periodista";
 
+const navItems = [
+  { label: "Bitácora", href: "#bitacora" },
+  { label: "Servicios", href: "#servicios" },
+  { label: "Contacto", href: "#contacto" },
+];
+
 const socials = [
   { name: "Instagram", url: "https://instagram.com/danielduranvilches" },
   { name: "LinkedIn", url: "https://www.linkedin.com/in/danielduranvilches" },
@@ -10,71 +16,66 @@ const socials = [
 
 <header class="main-header">
   <div class="header-inner">
-    
     <div class="brand">
       <a href="/" class="logo">
         {siteName}
       </a>
       <span class="role">{role}</span>
     </div>
-    
-    <nav class="social-nav">
-      {socials.map((social) => (
-        <a href={social.url} target="_blank" rel="noopener noreferrer">
-          {social.name}
-        </a>
-      ))}
-    </nav>
 
+    <div class="nav-group">
+      <nav class="site-nav" aria-label="Navegacion principal">
+        {navItems.map((item) => (
+          <a href={item.href}>{item.label}</a>
+        ))}
+      </nav>
+
+      <nav class="social-nav" aria-label="Redes sociales">
+        {socials.map((social) => (
+          <a href={social.url} target="_blank" rel="noopener noreferrer">
+            {social.name}
+          </a>
+        ))}
+      </nav>
+    </div>
   </div>
 </header>
 
 <style>
   .main-header {
     width: 100%;
-    /* Tu padding original */
-    padding: 1.5rem var(--padding, 20px) 0rem; 
-    
-    /* Asegúrate de que el fondo sea sólido para que no se vea el texto mezclado al pasar por debajo */
-    background-color: var(--bg-dark); 
-    
-    /* --- CÓDIGO NUEVO PARA FIJARLO --- */
-    position: sticky;  /* Comportamiento "pegajoso" */
-    top: 0;            /* Se pega al tocar el borde superior */
-    z-index: 1000;     /* Asegura que quede por encima de las fotos y videos */
-    
-    /* Opcional: Un toque elegante (Blur) */
-    /* Si tu variable --bg-dark tiene algo de transparencia, esto desenfoca lo que pasa por detrás */
-    backdrop-filter: blur(10px); 
-    -webkit-backdrop-filter: blur(10px); /* Para Safari */
+    padding: 1rem var(--page-padding) 0;
+    background: rgba(0, 0, 0, 0.78);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
   }
 
   .header-inner {
     display: flex;
-    justify-content: space-between; /* Separa Marca a la izq y Redes a la der */
-    align-items: center; /* Centrado vertical del bloque completo */
-    flex-wrap: wrap;
-    gap: 1.5rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+    justify-content: space-between;
+    align-items: center;
+    gap: 1rem;
+    padding-bottom: 0.9rem;
+    border-bottom: 1px solid var(--line-soft);
   }
 
-  /* --- Estilos del Bloque de Marca --- */
   .brand {
     display: flex;
-    flex-direction: column; /* Esto pone el rol DEBAJO del nombre */
-    line-height: 1.1;       /* Mantiene el rol pegadito al nombre */
-    gap: 2px;               /* Pequeño espacio extra si es necesario */
+    flex-direction: column;
+    gap: 0.15rem;
+    min-width: 12rem;
   }
 
   .logo {
-    font-family: var(--font);
-    font-size: 1.8rem;      /* Tamaño grande para el nombre */
-    font-weight: 800;
+    font-size: clamp(1rem, 1.7vw, 1.45rem);
+    font-weight: 760;
     text-decoration: none;
-    color: var(--color-text);
+    color: var(--color-text-strong);
     text-transform: uppercase;
-    letter-spacing: -0.02em;
+    letter-spacing: 0;
     transition: color 0.2s ease;
   }
 
@@ -83,81 +84,99 @@ const socials = [
   }
 
   .role {
-    font-family: var(--font);
-    font-size: 0.9rem;      /* Tamaño más pequeño para el rol */
-    font-weight: 500;
+    font-size: 0.78rem;
+    font-weight: 560;
     text-transform: uppercase;
-    letter-spacing: 0.1em;  /* Espaciado elegante entre letras */
-    color: rgba(255, 255, 255, 0.6); /* Color grisáceo */
+    letter-spacing: 0;
+    color: var(--color-text-muted);
   }
 
-  /* --- Estilos de Redes Sociales --- */
+  .nav-group,
+  .site-nav,
   .social-nav {
     display: flex;
-    gap: 1.5rem;
     align-items: center;
   }
 
-  .social-nav a {
-    color: #ffffff;
-    text-decoration: none;
-    font-size: 0.85rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    transition: color 0.2s ease;
-    opacity: 0.7;
+  .nav-group {
+    gap: clamp(1rem, 3vw, 3rem);
   }
 
+  .site-nav {
+    gap: clamp(0.9rem, 2vw, 1.8rem);
+  }
+
+  .social-nav {
+    gap: clamp(0.75rem, 1.5vw, 1.3rem);
+  }
+
+  .site-nav a,
+  .social-nav a {
+    color: var(--color-text);
+    text-decoration: none;
+    font-size: 0.82rem;
+    font-weight: 620;
+    text-transform: uppercase;
+    letter-spacing: 0;
+    opacity: 0.72;
+    transition:
+      color 0.2s ease,
+      opacity 0.2s ease;
+  }
+
+  .site-nav a:hover,
   .social-nav a:hover {
     color: var(--color-accent);
     opacity: 1;
   }
 
-/* --- Responsive (Móvil) --- */
-  @media (max-width: 600px) {
+  @media (max-width: 860px) {
+    .header-inner {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    .nav-group {
+      width: 100%;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+  }
+
+  @media (max-width: 620px) {
     .main-header {
-      /* Padding compacto: arriba/abajo reducidos */
-      padding: 0.8rem var(--padding, 20px) 0rem; 
+      padding-top: 0.75rem;
     }
 
     .header-inner {
-      /* Mantenemos 'row' para que queden lado a lado */
-      flex-direction: row; 
-      justify-content: space-between; /* Uno a cada extremo */
-      align-items: center; /* Centrados verticalmente */
-      gap: 1rem; /* Espacio mínimo entre nombre y botones */
-      padding-bottom: 0.8rem;
-    }
-    
-    .brand {
-      /* Alineamos nombre y rol a la izquierda */
-      align-items: flex-start; 
-      text-align: left;
-      /* Evita que el nombre se rompa feo si falta espacio */
-      max-width: 60%; 
+      gap: 0.75rem;
     }
 
     .logo {
-      font-size: 1.1rem; /* Tamaño ajustado para que quepa en una línea o dos */
+      font-size: 1.08rem;
       line-height: 1.1;
     }
-    
+
     .role {
       font-size: 0.65rem;
-      margin-top: 2px;
     }
 
-    /* Redes a la derecha */
+    .nav-group {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+
+    .site-nav,
     .social-nav {
-      gap: 0.5rem; /* Botones más pegaditos entre sí */
-      flex-wrap: nowrap; /* Forzamos que no bajen de línea */
+      width: 100%;
+      justify-content: space-between;
+      gap: 0.55rem;
     }
 
+    .site-nav a,
     .social-nav a {
-      font-size: 0.6rem; /* Texto compacto */
-      padding: 4px 8px;  /* Botones más pequeños */
-
+      font-size: 0.68rem;
     }
   }
 </style>

@@ -5,28 +5,105 @@ import heroAudiovisual from "~/images/hero-images/hero-audiovisual.jpg";
 import heroContenido from "~/images/hero-images/hero-contenido.mp4";
 import heroDesign from "~/images/hero-images/hero-diseno.jpg";
 import BaseLayout from "~/layouts/BaseLayout.astro";
+
+const capabilities = [
+  {
+    title: "Creación de contenido",
+    description:
+      "Piezas audiovisuales con ritmo editorial para marcas, instituciones y proyectos culturales.",
+    video: heroContenido,
+  },
+  {
+    title: "Producción audiovisual",
+    description:
+      "Registro, montaje y dirección visual para historias que conectan con tu audiencia.",
+    image: heroAudiovisual,
+  },
+  {
+    title: "Diseño gráfico",
+    description:
+      "Sistemas graficos, composiciones y materiales visuales para comunicar con identidad.",
+    image: heroDesign,
+  },
+];
 ---
 
 <BaseLayout
-  title="Daniel Durán Vilches - Periodista"
-  description="Fotos y Videos capturados por Daniel Durán"
+  title="Daniel Durán Vilches - Portfolio visual"
+  description="Portfolio visual de Daniel Durán Vilches: fotografia, registro audiovisual, cobertura y diseño."
 >
+  <section class="editorial-hero" id="inicio" aria-label="Portada">
+    <video
+      src={heroContenido}
+      class="editorial-hero__media"
+      autoplay
+      muted
+      playsinline
+      loop
+    />
+    <div class="editorial-hero__overlay"></div>
+    <div class="editorial-hero__content">
+      <p class="section-kicker"></p>
+      <h1>Agencia de comunicaciones y publicidad</h1>
+      <p class="editorial-hero__lead">
+        Fotografia, registro audiovisual y composicion grafica desde una mirada
+        periodistica sobre territorio, cultura y escena.
+      </p>
+      <div class="editorial-hero__links" aria-label="Accesos principales">
+        <a href="#bitacora">Bitácora</a>
+        <a href="#servicios">Servicios</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-intro" id="bitacora" aria-labelledby="bitacora-title">
+    <p class="section-kicker">Bitácora</p>
+    <div class="section-intro__grid">
+      <h2 id="bitacora-title">Un archivo vivo.</h2>
+      <p>
+        Selección que reune naturaleza, conciertos y otros espacios con pulso editorial.
+      </p>
+    </div>
+  </section>
+
   <MediaGrid />
-  <div id="servicios" style="padding: var(--padding); padding-bottom: 0;">
-    <HeroCard
-      title="Creación de Contenido"
-      eyebrow=""
-      video={heroContenido}
-    />
-    <HeroCard
-      title="Producción Audiovisual"
-      eyebrow=""
-      image={heroAudiovisual}
-    />
-    <HeroCard
-      title="Diseño Grafico"
-      eyebrow=""
-      image={heroDesign}
-    />
+
+  <section class="section-intro section-intro--capabilities" id="servicios" aria-labelledby="servicios-title">
+    <p class="section-kicker">Servicios</p>
+    <div class="section-intro__grid">
+      <h2 id="servicios-title">Entendidos como proceso visual.</h2>
+      <p>
+        Un trabajo que cruza investigacion, registro y edición para construir piezas
+        con identidad y relato corporativo.
+      </p>
+    </div>
+  </section>
+
+  <div class="capability-stack" id="servicios-lista">
+    {
+      capabilities.map((capability) => (
+        <HeroCard
+          title={capability.title}
+          description={capability.description}
+          image={capability.image}
+          video={capability.video}
+        />
+      ))
+    }
   </div>
+
+  <section class="contact-section" id="contacto" aria-labelledby="contacto-title">
+    <p class="section-kicker">Contacto</p>
+    <div>
+      <h2 id="contacto-title">Para colaboraciones, registros y proyectos visuales.</h2>
+      <div class="contact-section__links">
+        <a href="mailto:contacto@danielduranvilches.com">contacto@danielduranvilches.com</a>
+        <a href="https://instagram.com/danielduranvilches" target="_blank" rel="noopener noreferrer">Instagram</a>
+        <a href="https://www.linkedin.com/in/danielduranvilches" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+      </div>
+    </div>
+    <p class="contact-section__legal">
+      Servicios de comunicaciones y publicidad Daniel Durán Vilches EIRL.
+    </p>
+  </section>
 </BaseLayout>

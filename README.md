@@ -1,25 +1,30 @@
-![Astro Photo Grid Preview](./public/cover.png)
+# Daniel Duran Vilches Portfolio
 
-# Astro Photo Grid
+Portfolio visual de Daniel Duran Vilches, periodista y creador audiovisual. El sitio presenta una seleccion editorial de fotografia, video, cobertura y diseno, con una experiencia de galeria como pieza principal.
 
-A minimal, single-page photo gallery for [Astro](https://astro.build/). See the [demo](https://astro-photo-grid.netlify.app/)!
+## Stack
 
-## Features
+- Astro
+- Fancybox para lightbox de imagenes y videos
+- Astro Assets para optimizacion de imagenes
+- Biome, Stylelint y Astro Check para validacion
 
-- **Responsive, justified grid using modern CSS.** All layout and reflow logic is handled with pure CSS—no JS required for positioning!
-- **Automatic lightbox integration.** Images open in a full-screen preview using [Fancybox](https://fancyapps.com/fancybox/), which includes swipe, drag, pinch-to-zoom, and a customizable toolbar.
-- **Optimized image loading and sizing.** Images on the grid are optimized using Astro's [`<Image />` component](https://docs.astro.build/en/guides/images/). Images on the grid beyond the first screen are lazily loaded.
+## Estructura
 
-## Getting Started
+- `src/pages/index.astro`: pagina unica con portada, bitacora seleccionada, capacidades y contacto.
+- `src/components/MediaGrid.astro`: grilla justificada con fotos, videos, captions y lightbox.
+- `src/components/HeroCard.astro`: bloques editoriales para capacidades visuales.
+- `src/images`: material fotografico, audiovisual y metadatos `.md`.
 
-1. Click "Use this template" and create a new repository.
-2. In `astro.config.mjs`, update `site` from `https://mysite.com` to your site URL.
-3. In `src/layouts/BaseLayout.astro`, update `siteName` to your site name.
-4. Replace the items in `src/images` with your own photos.
-5. Good to go!
+## Desarrollo
 
-## Credits
+```sh
+pnpm install
+pnpm run dev
+pnpm run check
+pnpm run build
+```
 
-- CSS-only justified gallery layout from [Helmut Wandl](https://medium.com/@ehtmlu/css-image-grid-gallery-4ec8824560a1) and [SmolCSS](https://smolcss.dev/#smol-aspect-ratio-gallery)
-- [Fancybox](https://fancyapps.com/fancybox/) lightbox
-- All demo images from [Unsplash](https://unsplash.com/)
+## Contenido
+
+Las fotos y videos viven en `src/images`. Cuando un archivo multimedia tiene un `.md` con el mismo nombre, ese archivo alimenta el caption del lightbox con titulo, ubicacion, fecha, descripcion y tags.

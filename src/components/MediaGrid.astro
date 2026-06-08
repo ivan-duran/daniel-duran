@@ -66,7 +66,7 @@ function buildCaption(meta: MetaFM) {
   const date = clean(meta.date ?? "");
   const tags = (meta.tags ?? []).map((t) => clean(t)).filter(Boolean);
 
-  if (!title && !location && !date && tags.length === 0) return "";
+  if (!title && !location && !date && !desc) return "";
 
   const titleHtml = title
     ? `<h3 class="cap-title">${escapeHtml(title)}</h3>`
@@ -225,7 +225,7 @@ for (const p of allPaths) {
 
 <div class="load-more-container" id="loadMoreContainer">
   <button id="btnShowMore" class="btn-show-more">
-    Mostrar más
+    Selección completa
   </button>
 
   <button id="btnScrollNext" class="btn-scroll-next" aria-label="Ir a la siguiente sección">
@@ -416,14 +416,11 @@ for (const p of allPaths) {
   // Acción de la Flecha
   if (scrollBtn) {
     scrollBtn.addEventListener("click", () => {
-      // 1. Buscamos la sección por su ID
       const nextSection = document.getElementById("servicios");
-      
+
       if (nextSection) {
-        // 2. Si existe, viajamos hasta ella suavemente
         nextSection.scrollIntoView({ behavior: "smooth" });
       } else {
-        // Fallback: Si se te olvidó poner el ID, bajamos una pantalla completa
         window.scrollBy({ top: window.innerHeight, behavior: "smooth" });
       }
     });
@@ -432,11 +429,11 @@ for (const p of allPaths) {
 
 <style is:global>
   .justified-gallery {
-    --padding: max(1.0vw, 12px);
-    --space: clamp(5px, 0.5vw, 10px);
-    --min-height: clamp(270px, 25vw, 520px);
+    --padding: var(--page-padding);
+    --space: clamp(0.45rem, 0.75vw, 0.85rem);
+    --min-height: clamp(230px, 23vw, 500px);
 
-    padding: var(--padding);
+    padding: 0 var(--padding);
     display: flex;
     flex-wrap: wrap;
     gap: var(--space);
@@ -446,10 +443,18 @@ for (const p of allPaths) {
       flex-basis: calc(var(--min-height) * (var(--width) / var(--height)));
       aspect-ratio: var(--width) / var(--height);
       overflow: hidden;
-      opacity: 0.9;
-      transition: all 0.05s ease-in-out;
+      opacity: 0.92;
+      transition:
+        opacity 0.2s ease,
+        transform 0.2s ease;
       position: relative;
-      border-radius: 18px;
+      border-radius: var(--radius-medium);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    a.media:hover {
+      opacity: 1;
+      transform: translateY(-2px);
     }
 
     a.media img {
@@ -484,8 +489,8 @@ for (const p of allPaths) {
 
   /* Fancybox Overrides */
   .fancybox__container {
-    --f-caption-padding: 0px 4px;
-    --media-radius: 18px;
+    --f-caption-padding: 0 4px;
+    --media-radius: var(--radius-medium);
   }
 
   /* Cursor por defecto (no zoom) */
@@ -539,99 +544,80 @@ for (const p of allPaths) {
 
   /* Estilos del botón */
   .load-more-container {
-    display: none; /* Se oculta por defecto hasta que JS calcule si es necesario */
+    display: none;
     justify-content: center;
-    padding: 40px 0;
+    padding: clamp(1.5rem, 4vw, 3rem) 0 clamp(2rem, 6vw, 5rem);
     width: 100%;
   }
 
   .btn-show-more {
-    background-color: transparent;
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    color: white;
-    padding: 10px 24px;
-    font-size: 14px;
+    background-color: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--line-strong);
+    color: var(--color-text-strong);
+    padding: 0.9rem 1.35rem;
+    font-size: 0.78rem;
+    font-weight: 680;
     text-transform: uppercase;
-    letter-spacing: 1px;
-    border-radius: 30px;
+    letter-spacing: 0;
+    border-radius: 999px;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition:
+      background-color 0.2s ease,
+      border-color 0.2s ease,
+      color 0.2s ease;
   }
 
   .btn-show-more:hover {
-    background-color: white;
-    color: black;
-    border-color: white;
+    background-color: var(--color-text-strong);
+    color: var(--bg-dark);
+    border-color: var(--color-text-strong);
   }
 
-
-
-/* Estilo de la Flecha */
   .btn-scroll-next {
-    display: none; /* Oculto por defecto, JS lo pasa a flex */
-
-    /* POSICIÓN FIJA Y CENTRADO PERFECTO */
+    display: none;
     position: fixed;
-    bottom: 30px;           
-    left: 0;                /* Se estira a la izquierda */
-    right: 0;               /* Se estira a la derecha */
-    margin: 0 auto;         /* El navegador lo centra milimétricamente */
-    
-    /* TAMAÑO EXACTO DE LA CAJA */
-    width: 60px;            
-    height: 60px;           
-    z-index: 1000;          
-
-    /* ALINEACIÓN INTERNA DEL ICONO */
+    bottom: 1.5rem;
+    left: 0;
+    right: 0;
+    margin: 0 auto;
+    width: 3.75rem;
+    height: 3.75rem;
+    z-index: 1000;
     justify-content: center;
     align-items: center;
-    padding: 0;             /* Quitamos padding para evitar asimetrías */
-
-    /* ESTILOS VISUALES */
-    background: transparent;
-    border: none;
-    color: white;
+    padding: 0;
+    background: rgba(0, 0, 0, 0.58);
+    border: 1px solid var(--line-soft);
+    border-radius: 999px;
+    color: var(--color-text-strong);
     cursor: pointer;
-    transition: color 0.3s ease;
-    animation: bounce 2s infinite; 
+    transition:
+      color 0.2s ease,
+      border-color 0.2s ease;
+    animation: bounce 2s infinite;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
   }
 
   .btn-scroll-next svg {
-    width: 40px;
-    height: 40px;
+    width: 2rem;
+    height: 2rem;
     opacity: 0.8;
-    display: block; /* Evita que el navegador le agregue márgenes fantasma de texto */
+    display: block;
   }
 
   .btn-scroll-next:hover {
-    color: var(--color-accent, #ff66c4);
+    color: var(--color-accent);
+    border-color: var(--color-accent);
   }
-  
+
   .btn-scroll-next:hover svg {
     opacity: 1;
   }
 
-  /* Animación de rebote suave */
   @keyframes bounce {
     0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
     40% { transform: translateY(-10px); }
     60% { transform: translateY(-5px); }
   }
-
-  .btn-scroll-next:hover {
-    color: var(--color-accent, #ff66c4); /* Usa tu color rosado o fallback */
-  }
-  
-  .btn-scroll-next:hover svg {
-    opacity: 1;
-  }
-
-  /* Animación de rebote suave */
-  @keyframes bounce {
-    0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-    40% { transform: translateY(-10px); }
-    60% { transform: translateY(-5px); }
-  }
-
-
 </style>
