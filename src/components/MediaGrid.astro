@@ -1,6 +1,6 @@
 ---
 import "@fancyapps/ui/dist/fancybox/fancybox.css";
-import { Image } from "astro:assets";
+import { getImage, Image } from "astro:assets";
 import type { MarkdownInstance } from "astro";
 
 /* -------------------------------------------------------------------------- */
@@ -152,7 +152,7 @@ for (const p of allPaths) {
         if (!item.posterPath) {
           return (
             <a
-              class="media video"
+              class="media video no-poster"
               style="--width: 16; --height: 9;"
               href={item.url}
               data-caption={caption}
@@ -169,10 +169,16 @@ for (const p of allPaths) {
         }
         // Con poster
         const { default: posterData } = await photos[item.posterPath]();
+        const posterImage = await getImage({
+          src: posterData,
+          width: Math.min(posterData.width, 960),
+          format: "webp",
+          quality: 72,
+        });
         return (
           <a
-            class="media video"
-            style={`--width: ${posterData.width}; --height: ${posterData.height};`}
+            class="media video has-poster"
+            style={`--width: ${posterData.width}; --height: ${posterData.height}; --poster: url("${posterImage.src}");`}
             href={item.url}
             data-caption={caption}
             target="_blank"
@@ -181,15 +187,16 @@ for (const p of allPaths) {
             data-html5video-format={videoMime(filename)}
             data-width={posterData.width}
             data-height={posterData.height}
-            data-thumb={posterData.src}
+            data-thumb={posterImage.src}
           >
+            <span class="video-poster" aria-hidden="true"></span>
             <video
               class="tile-video"
               muted
               loop
               playsinline
               preload="none"
-              poster={posterData.src}
+              poster={posterImage.src}
               data-src={item.url}
             />
           </a>
@@ -318,31 +325,6 @@ for (const p of allPaths) {
   bindFancybox();
 
   /* -------------------------------------------------------------------------- */
-  /* LAZY LOAD VIDEOS                                                         */
-  /* -------------------------------------------------------------------------- */
-  const videos = document.querySelectorAll("video.tile-video[data-src]");
-  async function tryPlay(v: HTMLVideoElement) {
-    v.muted = true;
-    try { await v.play(); } catch {}
-  }
-
-  const io = new IntersectionObserver(
-    (entries) => {
-      for (const entry of entries) {
-        const v = entry.target as HTMLVideoElement;
-        if (entry.isIntersecting) {
-          if (!v.src && v.dataset.src) v.src = v.dataset.src;
-          tryPlay(v);
-        } else {
-          v.pause();
-        }
-      }
-    },
-    { threshold: 0.35 }
-  );
-  videos.forEach((v) => io.observe(v));
-
-  /* -------------------------------------------------------------------------- */
   /* LOGICA FILAS Y BOTONES                                                   */
   /* -------------------------------------------------------------------------- */
   const grid = document.getElementById("photoswipe");
@@ -356,6 +338,94 @@ for (const p of allPaths) {
 
   const MOBILE_INITIAL_ITEMS = 10;
   const DESKTOP_ROW_LIMIT = 4;
+
+  /* -------------------------------------------------------------------------- */
+  /* LAZY LOAD VIDEOS                                                         */
+  /* -------------------------------------------------------------------------- */
+  const videos = Array.from(
+    document.querySelectorAll<HTMLVideoElement>("video.tile-video[data-src]"),
+  );
+
+  function markVideoReady(video: HTMLVideoElement) {
+    video.classList.add("is-ready");
+  }
+
+  function loadVideo(video: HTMLVideoElement) {
+    if (video.dataset.loaded === "true") return;
+    if (!video.dataset.src) return;
+
+    video.src = video.dataset.src;
+    video.dataset.loaded = "true";
+    video.load();
+  }
+
+  async function playWhenReady(video: HTMLVideoElement) {
+    loadVideo(video);
+    video.muted = true;
+
+    if (video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+      markVideoReady(video);
+      try {
+        await video.play();
+      } catch {}
+      return;
+    }
+
+    if (video.dataset.waitingForFrame === "true") return;
+    video.dataset.waitingForFrame = "true";
+
+    let didHandleReady = false;
+    const onReady = async () => {
+      if (didHandleReady) return;
+      didHandleReady = true;
+      video.dataset.waitingForFrame = "false";
+      video.removeEventListener("loadeddata", onReady);
+      video.removeEventListener("canplay", onReady);
+      markVideoReady(video);
+      if (video.dataset.shouldPlay !== "true") return;
+      try {
+        await video.play();
+      } catch {}
+    };
+
+    video.addEventListener("loadeddata", onReady, { once: true });
+    video.addEventListener("canplay", onReady, { once: true });
+  }
+
+  function setupVideoLoading() {
+    if (!videos.length) return;
+
+    if (!("IntersectionObserver" in window)) {
+      videos.forEach((video) => {
+        loadVideo(video);
+        markVideoReady(video);
+      });
+      return;
+    }
+
+    const videoObserver = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          const video = entry.target as HTMLVideoElement;
+
+          if (entry.isIntersecting) {
+            video.dataset.shouldPlay = "true";
+            playWhenReady(video);
+            continue;
+          }
+
+          video.dataset.shouldPlay = "false";
+          video.pause();
+        }
+      },
+      {
+        rootMargin: "600px 0px",
+        threshold: 0.08,
+      },
+    );
+
+    videos.forEach((video) => videoObserver.observe(video));
+  }
 
   function setControls(limitReached: boolean) {
     if (!btnContainer) return;
@@ -498,182 +568,7 @@ for (const p of allPaths) {
 
   window.addEventListener("scroll", updateScrollButtonVisibility, { passive: true });
   window.addEventListener("resize", updateScrollButtonVisibility);
-</script>
-
-<script is:inline>
-  (() => {
-    const grid = document.getElementById("photoswipe");
-    const btnContainer = document.getElementById("loadMoreContainer");
-    const btn = document.getElementById("btnShowMore");
-    const scrollBtn = document.getElementById("btnScrollNext");
-    const bitacoraSection = document.getElementById("bitacora");
-    const nextSection = document.getElementById("servicios");
-    const mobileViewport = window.matchMedia("(max-width: 620px)");
-    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const mobileInitialItems = 10;
-    const desktopRowLimit = 4;
-    let isExpanded = false;
-    let resizeTimer;
-
-    if (!grid || !btnContainer) return;
-
-    function setControls(limitReached) {
-      if (limitReached) {
-        btnContainer.style.display = "flex";
-        if (btn) btn.style.display = "inline-flex";
-        if (scrollBtn) scrollBtn.style.display = "none";
-        return;
-      }
-
-      btnContainer.style.display = "none";
-    }
-
-    function updateScrollButtonVisibility() {
-      if (!scrollBtn) return;
-
-      if (!isExpanded) {
-        scrollBtn.style.display = "none";
-        scrollBtn.classList.remove("is-fixed", "is-docked");
-        return;
-      }
-
-      const bitacoraTop = bitacoraSection?.offsetTop ?? grid?.offsetTop ?? 0;
-      const nextTop = nextSection?.offsetTop ?? document.documentElement.scrollHeight;
-      const viewportTop = window.scrollY;
-      const viewportBottom = viewportTop + window.innerHeight;
-
-      if (viewportTop < bitacoraTop || viewportTop >= nextTop) {
-        scrollBtn.style.display = "none";
-        scrollBtn.classList.remove("is-fixed", "is-docked");
-        return;
-      }
-
-      scrollBtn.style.display = "flex";
-      scrollBtn.classList.toggle("is-fixed", viewportBottom < nextTop);
-      scrollBtn.classList.toggle("is-docked", viewportBottom >= nextTop);
-    }
-
-    function applyMobileLimit(items) {
-      let limitReached = false;
-
-      items.forEach((el, index) => {
-        if (index >= mobileInitialItems) {
-          el.classList.add("hidden-item");
-          limitReached = true;
-        }
-      });
-
-      return limitReached;
-    }
-
-    function applyRowLimit(items) {
-      let currentRow = 1;
-      let previousTop = items[0]?.offsetTop ?? 0;
-      let limitReached = false;
-
-      for (const el of items) {
-        if (el.offsetTop > previousTop + 10) {
-          currentRow++;
-          previousTop = el.offsetTop;
-        }
-
-        if (currentRow > desktopRowLimit) {
-          el.classList.add("hidden-item");
-          limitReached = true;
-        }
-      }
-
-      return limitReached;
-    }
-
-    function calculateRows() {
-      if (isExpanded) return;
-
-      const items = Array.from(grid.children);
-      if (items.length === 0) return;
-
-      items.forEach((el) => el.classList.remove("hidden-item"));
-
-      const limitReached = mobileViewport.matches
-        ? applyMobileLimit(items)
-        : applyRowLimit(items);
-
-      setControls(limitReached);
-    }
-
-    function scheduleCalculate() {
-      clearTimeout(resizeTimer);
-      resizeTimer = setTimeout(() => {
-        requestAnimationFrame(() => requestAnimationFrame(calculateRows));
-      }, 90);
-    }
-
-    function revealAll() {
-      isExpanded = true;
-      grid
-        .querySelectorAll(".hidden-item")
-        .forEach((el) => el.classList.remove("hidden-item"));
-
-      if (btn) btn.style.display = "none";
-      updateScrollButtonVisibility();
-    }
-
-    btn?.addEventListener("click", revealAll);
-    scrollBtn?.addEventListener("click", () => {
-      const behavior = reducedMotion.matches ? "auto" : "smooth";
-
-      if (nextSection) {
-        if (mobileViewport.matches) {
-          const header = document.querySelector(".main-header");
-          const headerHeight = header?.offsetHeight ?? 0;
-          const top = nextSection.offsetTop - headerHeight - 8;
-          window.scrollTo({ top: Math.max(0, top), behavior });
-        } else {
-          nextSection.scrollIntoView({ behavior });
-        }
-        return;
-      }
-
-      window.scrollBy({ top: window.innerHeight, behavior });
-    });
-
-    if ("IntersectionObserver" in window) {
-      const videoObserver = new IntersectionObserver(
-        (entries) => {
-          for (const entry of entries) {
-            const video = entry.target;
-
-            if (entry.isIntersecting) {
-              if (!video.src && video.dataset.src) video.src = video.dataset.src;
-              video.muted = true;
-              video.play().catch(() => {});
-              continue;
-            }
-
-            video.pause();
-          }
-        },
-        { threshold: 0.35 },
-      );
-
-      grid
-        .querySelectorAll("video.tile-video[data-src]")
-        .forEach((video) => videoObserver.observe(video));
-    }
-
-    scheduleCalculate();
-    window.addEventListener("load", scheduleCalculate, { once: true });
-    window.addEventListener("resize", scheduleCalculate);
-    window.addEventListener("scroll", updateScrollButtonVisibility, { passive: true });
-    window.addEventListener("resize", updateScrollButtonVisibility);
-    mobileViewport.addEventListener?.("change", scheduleCalculate);
-    document.fonts?.ready.then(scheduleCalculate);
-    grid.querySelectorAll("img").forEach((img) => {
-      if (img.complete) return;
-      img.addEventListener("load", scheduleCalculate, { once: true });
-      img.addEventListener("error", scheduleCalculate, { once: true });
-    });
-  })();
+  setupVideoLoading();
 </script>
 
 <style is:global>
@@ -719,20 +614,41 @@ for (const p of allPaths) {
       width: 100%;
       display: grid;
       place-items: center;
-      background: rgba(0, 0, 0, 0.9);
+      background:
+        linear-gradient(135deg, rgba(255, 255, 255, 0.08), transparent 44%),
+        rgba(255, 255, 255, 0.05);
     }
+
     a.media.video .video-fallback span {
       font-size: 14px;
       opacity: 0.8;
     }
 
+    a.media.video .video-poster {
+      position: absolute;
+      inset: 0;
+      background-image: var(--poster);
+      background-position: center;
+      background-size: cover;
+      border-radius: inherit;
+      transition: opacity 0.24s ease;
+    }
+
     a.media video.tile-video {
+      position: absolute;
+      inset: 0;
       height: 100%;
       width: 100%;
       object-fit: cover;
       display: block;
+      opacity: 0;
       pointer-events: none;
       border-radius: inherit;
+      transition: opacity 0.24s ease;
+    }
+
+    a.media video.tile-video.is-ready {
+      opacity: 1;
     }
   }
 
