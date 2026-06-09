@@ -211,7 +211,7 @@ main {
 }
 
 .cap-title {
-  margin: 0 0 8px;
+  margin: 0.25rem 0 8px;
   font-size: clamp(1.4rem, 3vw, 2.35rem);
   line-height: 1.05;
   font-weight: 750;
@@ -234,7 +234,7 @@ main {
 
 .cap-tags {
   list-style: none;
-  padding: 0;
+  padding: 0 0 clamp(0.45rem, 1.2vw, 0.85rem);
   margin: 12px 0 0;
   display: flex;
   flex-wrap: wrap;
@@ -255,6 +255,8 @@ main {
 }
 
 .f-caption .cap {
+  padding: clamp(0.65rem, 1.4vw, 1rem) clamp(0.75rem, 2vw, 1.35rem)
+  clamp(0.75rem, 1.8vw, 1.2rem);
   text-align: start;
 }
 
