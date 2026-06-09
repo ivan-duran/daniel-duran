@@ -12,12 +12,13 @@
   --bg-dark: var(--color-primary);
   --outline: #ffffff;
   --page-padding: clamp(1rem, 3vw, 3.2rem);
-  --section-gap: clamp(4rem, 9vw, 8rem);
+  --section-gap: clamp(1rem, 2.25vw, 2rem);
   --radius-medium: 14px;
   --radius-large: 18px;
   --font:
     system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif,
     "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol";
+  --header-anchor-offset: 0px;
 
   /* Caption Card */
   --cap-blur: 10px;
@@ -26,6 +27,7 @@
 
 html {
   scroll-behavior: smooth;
+  scroll-padding-top: var(--header-anchor-offset);
 }
 
 body {
@@ -184,7 +186,7 @@ main {
 }
 
 .section-intro--capabilities {
-  padding-top: clamp(4rem, 8vw, 7rem);
+  padding-top: var(--section-gap);
 }
 
 .capability-stack {
@@ -194,7 +196,7 @@ main {
 }
 
 .contact-section {
-  padding-top: clamp(4rem, 8vw, 7rem);
+  padding-top: var(--section-gap);
   border-top: 1px solid var(--line-soft);
 }
 
@@ -256,13 +258,13 @@ main {
 
 .f-caption .cap {
   padding: clamp(0.65rem, 1.4vw, 1rem) clamp(0.75rem, 2vw, 1.35rem)
-  clamp(0.75rem, 1.8vw, 1.2rem);
+    clamp(0.75rem, 1.8vw, 1.2rem);
   text-align: start;
 }
 
 @media (max-width: 820px) {
   :root {
-    --section-gap: clamp(3rem, 10vw, 5rem);
+    --section-gap: clamp(1.5rem, 5vw, 2.5rem);
   }
 
   .editorial-hero {
@@ -282,7 +284,7 @@ main {
 @media (max-width: 560px) {
   :root {
     --page-padding: clamp(1rem, 4.8vw, 1.35rem);
-    --section-gap: clamp(2.75rem, 11vw, 4rem);
+    --section-gap: clamp(1.37rem, 5.5vw, 2rem);
   }
 
   .editorial-hero {

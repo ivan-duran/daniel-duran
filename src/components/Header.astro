@@ -219,3 +219,32 @@ const socials = [
     }
   }
 </style>
+
+<script>
+  const header = document.querySelector(".main-header");
+  const root = document.documentElement;
+
+  const updateHeaderAnchorOffset = () => {
+    if (!(header instanceof HTMLElement)) return;
+    root.style.setProperty("--header-anchor-offset", `${header.offsetHeight}px`);
+  };
+
+  updateHeaderAnchorOffset();
+
+  if (header instanceof HTMLElement) {
+    new ResizeObserver(updateHeaderAnchorOffset).observe(header);
+  }
+
+  window.addEventListener("load", () => {
+    updateHeaderAnchorOffset();
+
+    const activeTargetId = window.location.hash.slice(1);
+    const activeTarget = activeTargetId
+      ? document.getElementById(decodeURIComponent(activeTargetId))
+      : null;
+
+    if (activeTarget instanceof HTMLElement) {
+      requestAnimationFrame(() => activeTarget.scrollIntoView());
+    }
+  });
+</script>
