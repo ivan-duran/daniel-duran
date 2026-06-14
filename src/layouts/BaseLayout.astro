@@ -2,10 +2,13 @@
 import "~/styles/reset.css";
 import "~/styles/base.css";
 import smartypants from "smartypants";
-// Importamos el nuevo Header
 import Header from "~/components/Header.astro";
 
 const siteName = "Daniel Durán Vilches";
+const defaultSocialImage = {
+  src: "/cover.png",
+  alt: "Portafolio visual de fotografía, producción audiovisual y diseño gráfico de Daniel Durán Vilches",
+};
 
 export interface Props {
   title: string;
@@ -14,20 +17,87 @@ export interface Props {
     src: string;
     alt: string;
   };
+  jsonLd?: Record<string, unknown> | Record<string, unknown>[];
 }
 
 const {
   title = "Daniel Durán Vilches EIRL",
-  description = "Portafolio de Daniel Durán: fotografía y bitácora audiovisual.",
+  description = "Portafolio de Daniel Durán: fotografía, producción audiovisual, contenido y diseño gráfico en Chile.",
   image,
+  jsonLd,
 } = Astro.props as Partial<Props>;
 
 const canonicalURL = new URL(Astro.url.pathname, Astro.site ?? Astro.url);
 const pageTitle = Astro.url.pathname === "/" ? title : `${title} · ${siteName}`;
+const socialImage = image ?? defaultSocialImage;
 
-const ogImageUrl = image?.src
-  ? new URL(image.src, Astro.site ?? Astro.url).toString()
-  : undefined;
+const ogImageUrl = new URL(socialImage.src, Astro.site ?? Astro.url).toString();
+const structuredData =
+  jsonLd ??
+  ({
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "ProfessionalService",
+        "@id": `${canonicalURL.origin}/#business`,
+        name: "Daniel Durán Vilches EIRL",
+        url: canonicalURL.origin,
+        image: ogImageUrl,
+        email: "contacto@danielduranvilches.com",
+        description,
+        address: {
+          "@type": "PostalAddress",
+          addressCountry: "CL",
+        },
+        areaServed: [
+          "Chile",
+          "Región del Biobío",
+          "Región de Los Ríos",
+          "Región de La Araucanía",
+          "Región de Los Lagos",
+        ],
+        sameAs: [
+          "https://instagram.com/danielduranvilches",
+          "https://www.linkedin.com/in/danielduranvilches",
+        ],
+        makesOffer: [
+          {
+            "@type": "Offer",
+            itemOffered: { "@type": "Service", name: "Fotografía" },
+          },
+          {
+            "@type": "Offer",
+            itemOffered: { "@type": "Service", name: "Producción audiovisual" },
+          },
+          {
+            "@type": "Offer",
+            itemOffered: { "@type": "Service", name: "Creación de contenido" },
+          },
+          {
+            "@type": "Offer",
+            itemOffered: { "@type": "Service", name: "Diseño gráfico" },
+          },
+          {
+            "@type": "Offer",
+            itemOffered: { "@type": "Service", name: "Cobertura de eventos" },
+          },
+        ],
+      },
+      {
+        "@type": "Person",
+        "@id": `${canonicalURL.origin}/#person`,
+        name: "Daniel Durán Vilches",
+        jobTitle: "Periodista y creador audiovisual",
+        url: canonicalURL.origin,
+        image: ogImageUrl,
+        worksFor: { "@id": `${canonicalURL.origin}/#business` },
+        sameAs: [
+          "https://instagram.com/danielduranvilches",
+          "https://www.linkedin.com/in/danielduranvilches",
+        ],
+      },
+    ],
+  } satisfies Record<string, unknown>);
 ---
 
 <html lang="es">
@@ -45,9 +115,17 @@ const ogImageUrl = image?.src
     <meta property="og:url" content={canonicalURL} />
     <meta property="og:locale" content="es_CL" />
     <meta property="og:site_name" content={siteName} />
-  
-    {ogImageUrl && <meta property="og:image" content={ogImageUrl} />}
-    {image?.alt && <meta property="og:image:alt" content={image.alt} />}
+    <meta property="og:image" content={ogImageUrl} />
+    <meta property="og:image:alt" content={socialImage.alt} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={smartypants(pageTitle, 1)} />
+    <meta name="twitter:description" content={smartypants(description, 1)} />
+    <meta name="twitter:image" content={ogImageUrl} />
+    <script
+      type="application/ld+json"
+      is:inline
+      set:html={JSON.stringify(structuredData)}
+    />
   </head>
   <body>
     <Header />

@@ -66,7 +66,7 @@ function buildCaption(meta: MetaFM) {
   const date = clean(meta.date ?? "");
   const tags = (meta.tags ?? []).map((t) => clean(t)).filter(Boolean);
 
-  if (!title && !location && !date && !desc) return "";
+  if (!title && !location && !date && !desc && !tags.length) return "";
 
   const titleHtml = title
     ? `<h3 class="cap-title">${escapeHtml(title)}</h3>`
@@ -80,6 +80,21 @@ function buildCaption(meta: MetaFM) {
     ? `<ul class="cap-tags">${tags.map((t) => `<li class="cap-tag">${escapeHtml(t)}</li>`).join("")}</ul>`
     : "";
   return `<div class="cap">${titleHtml}${metaLine}${descHtml}${tagsHtml}</div>`;
+}
+
+function buildAltText(meta: MetaFM) {
+  const title = clean(meta.title ?? "");
+  if (title) return title;
+
+  const desc = clean(meta.description ?? "");
+  if (desc) return desc;
+
+  const location = clean(meta.location ?? "");
+  const tags = (meta.tags ?? []).map((t) => clean(t)).filter(Boolean);
+  const context = [tags.slice(0, 2).join(" y "), location].filter(Boolean);
+  if (context.length) return `Registro visual de ${context.join(" en ")}`;
+
+  return "Portafolio visual de fotografía y producción audiovisual de Daniel Durán";
 }
 
 /* -------------------------------------------------------------------------- */
@@ -144,6 +159,7 @@ for (const p of allPaths) {
     items.map(async (item, index) => {
       const meta = getMetaForMedia(item.path);
       const caption = buildCaption(meta);
+      const altText = buildAltText(meta);
 
       // VIDEO
       if (item.kind === "video") {
@@ -218,7 +234,7 @@ for (const p of allPaths) {
         >
           <Image
             src={imageData}
-            alt={meta.title?.trim() || "Foto de Daniel Durán"}
+            alt={altText}
             format="webp"
             quality={85}
             widths={[400, 720, 960, 1200, 1440, 1680, 1920]}
